@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: TimeCell_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+
+  backend:
+    build: ./backend
+    container_name: TimeCell_backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=1234
+      - DB_NAME=TimeCell_db
+    volumes:
+      - ./backend:/app
+    restart: always
+
+  db:
+    image: mysql:8
+    container_name: TimeCell_database
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: TimeCell_db
+    volumes:
+      - TimeCell_data:/var/lib/mysql
+    restart: always
+
+volumes:
+  TimeCell_data:
