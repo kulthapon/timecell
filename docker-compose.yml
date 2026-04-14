@@ -1,9 +1,11 @@
 services:
   frontend:
     build: ./client
-    container_name: TimeCell_frontend
+    container_name: timecell_frontend
     ports:
-      - "3000:3000"
+      - "80:3000"
+    environment:
+      - HOST=0.0.0.0
     depends_on:
       - backend
     stdin_open: true
@@ -11,31 +13,30 @@ services:
 
   backend:
     build: ./server
-    container_name: TimeCell_backend
+    container_name: timecell_backend
     ports:
       - "5000:5000"
-    depends_on:
-      - db
     environment:
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DB_NAME=TimeCell_db
-    volumes:
-      - ./server:/app
+    depends_on:
+      - db
     restart: always
 
   db:
     image: mysql:8
-    container_name: TimeCell_database
+    container_name: timecell_db
     ports:
       - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: TimeCell_db
     volumes:
-      - TimeCell_data:/var/lib/mysql
+      - timecell_data:/var/lib/mysql
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: always
 
 volumes:
-  TimeCell_data:
+  timecell_data:
