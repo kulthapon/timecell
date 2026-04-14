@@ -18,7 +18,7 @@ db.connect(err => {
   else console.log("Connected to MySQL");
 });
 
-app.get("/", (req, res) => {
+app.get("/register", (req, res) => {
   res.send("Backend OK");
 });
 
