@@ -1,10 +1,11 @@
 import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements, useLocation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import Menu from "./components/Menu.jsx";
-import Home from "./pages/Home.jsx";
-import Login from "./pages/LoginPage.jsx";
-import Register from "./pages/RegisterPage.jsx";
 import "./App.css";
+import "./languages/i18n";
+import ThemeProvider from "./themes/ThemeProvider";
+import LanguageSwitcher from "./components/LanguageSwitcher";
+import ThemeToggle from "./components/ThemeToggle";
+import { useTranslation } from "react-i18next";
 
 const MainLayout = () => {
   const location = useLocation();
@@ -14,7 +15,7 @@ const MainLayout = () => {
     <div id="root">
       {!isAuthPage && (
         <header style={{ position: "fixed", width: "100%", zIndex: 100 }}>
-          <Menu />
+          <p> test </p>
         </header>
       )}
       <div className="container" style={{ paddingTop: "80px" }}>
@@ -27,9 +28,6 @@ const MainLayout = () => {
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<MainLayout />}>
-      <Route index element={<Home />} />
-      <Route path="login" element={<Login />} />
-      <Route path="register" element={<Register />} />
     </Route>
   )
 );

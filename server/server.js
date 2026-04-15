@@ -1,32 +1,34 @@
 const express = require("express");
-const mysql = require("mysql2");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
+const langMiddleware = require("./middleware/langMiddleware");
+const themeMiddleware = require("./middleware/themeMiddleware");
+
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
-app.use(cors());
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
+
 app.use(express.json());
+app.use(cookieParser());
 
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-});
+app.use(langMiddleware);
+app.use(themeMiddleware);
 
-db.connect(err => {
-  if (err) console.log("DB ERROR: ", err);
-  else console.log("Connected to MySQL");
-});
+app.use("/api/auth", authRoutes);
 
-app.get("/register", (req, res) => {
+app.get("/", (req, res) => {
   res.send("Backend OK");
 });
 
-app.get("/users", (req, res) => {
-  db.query("SELECT * FROM users", (err, result) => {
-    if (err) return res.json(err);
-    res.json(result);
-  });
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
-
-app.listen(5000, () => console.log("Backend running on 5000"));
