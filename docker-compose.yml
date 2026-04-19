@@ -19,7 +19,7 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=root
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_PASSWORD=1234
       - DB_NAME=TimeCell_db
     depends_on:
       - db
@@ -31,11 +31,16 @@ services:
     ports:
       - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: TimeCell_db
     volumes:
       - timecell_data:/var/lib/mysql
       - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: always
 
 volumes:

@@ -1,0 +1,33 @@
+.history-wrapper {
+  min-height: calc(100vh - 60px);
+  background: var(--bg-sub);
+  padding: 2rem;
+}
+
+.history-container {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.history-container h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.history-sub {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 2rem;
+}
+
+.history-empty {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 14px;
+}

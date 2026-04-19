@@ -1,39 +1,33 @@
-import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements, useLocation } from "react-router-dom";
-import { Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "./context/ThemeContext";
+import { LangProvider }  from "./context/LangContext";
+import { AuthProvider }  from "./context/AuthContext";
+import ProtectedRoute    from "./components/ProtectedRoute";
+import Navbar            from "./components/Navbar";
+import HomePage          from "./pages/HomePage";
+import LoginPage         from "./pages/LoginPage";
+import RegisterPage      from "./pages/RegisterPage";
+import HistoryPage       from "./pages/HistoryPage";
 import "./App.css";
-import "./languages/i18n";
-import ThemeProvider from "./themes/ThemeProvider";
-import LanguageSwitcher from "./components/LanguageSwitcher";
-import ThemeToggle from "./components/ThemeToggle";
-import { useTranslation } from "react-i18next";
 
-const MainLayout = () => {
-  const location = useLocation();
-  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
-
+export default function App() {
   return (
-    <div id="root">
-      {!isAuthPage && (
-        <header style={{ position: "fixed", width: "100%", zIndex: 100 }}>
-          <p> test </p>
-        </header>
-      )}
-      <div className="container" style={{ paddingTop: "80px" }}>
-        <Outlet />
-      </div>
-    </div>
+    <ThemeProvider>
+      <LangProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Navbar />
+            <Routes>
+              <Route path="/"         element={<HomePage />} />
+              <Route path="/login"    element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/history"  element={
+                <ProtectedRoute><HistoryPage /></ProtectedRoute>
+              } />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </LangProvider>
+    </ThemeProvider>
   );
-};
-
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route path="/" element={<MainLayout />}>
-    </Route>
-  )
-);
-
-const App = () => {
-  return <RouterProvider router={router} />;
-};
-
-export default App;
+}

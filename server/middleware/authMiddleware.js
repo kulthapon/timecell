@@ -1,26 +1,35 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
+// OPTIONAL AUTH (for checking the login status)
+function optionalAuth(req, res, next) {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return next();
 
-//Function to check if the user is authenticated using the JWT token.
-//Use for routes that need user.
-exports.verifyJWT = (req, res, next) =>{
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
   
-  //Get token from header["x-access-token"].
-  const token = req.headers["x-access-token"]
+  }
+  next();
+}
 
-  if(!token){
-    //If no token, send error 403. 
-    res.status(403).send("Don't have token")
-  }else{
-    //If have token, decrypt it and store in req.user for later use. 
-    jwt.verify(token, "jwtSecret",async function(err, decoded) {
-        if (err) {
-          res.status(401).json({ error: err.message });
-        }else{
-            req.user = decoded;
-            next();
-        }
-    })
+// REQUIRED AUTH (login required)
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "unauthorized" });
   }
 
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ message: "unauthorized" });
+  }
 }
+
+module.exports = {
+  optionalAuth,
+  requireAuth
+};
