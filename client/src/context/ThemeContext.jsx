@@ -3,6 +3,7 @@ import Cookies from "js-cookie";
 
 const SUPPORTED_THEMES = ["light", "dark"];
 const DEFAULT_THEME = "light";
+const API_URL = process.env.REACT_APP_API_URL;
 
 function resolveInitialTheme() {
   const cookie    = Cookies.get("theme");
@@ -27,7 +28,7 @@ export function ThemeProvider({ children }) {
     Cookies.set("theme", newTheme, { expires: 365 });
     localStorage.setItem("theme", newTheme);
 
-    fetch("/api/utils/theme", {
+    fetch(`${API_URL}/api/utils/theme`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

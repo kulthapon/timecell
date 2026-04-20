@@ -1,9 +1,12 @@
 services:
   frontend:
-    build: ./client
+    build:
+      context: ./client
+      args:
+        - REACT_APP_API_URL=http://localhost:5000
     container_name: timecell_frontend
     ports:
-      - "80:3000"
+      - "3000:3000"
     environment:
       - HOST=0.0.0.0
     depends_on:
@@ -17,12 +20,14 @@ services:
     ports:
       - "5000:5000"
     environment:
+      - JWT_SECRET=supersecretkey
       - DB_HOST=db
       - DB_USER=root
       - DB_PASSWORD=1234
       - DB_NAME=TimeCell_db
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: always
 
   db:

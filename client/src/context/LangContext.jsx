@@ -1,9 +1,9 @@
-import { createContext, useContext, useState, useMemo } from "react";
+import { createContext, useContext, useState } from "react";
 import Cookies from "js-cookie";
-import { buildT } from "../utils/lang";
 
 const SUPPORTED_LANGS = ["th", "en"];
 const DEFAULT_LANG = "th";
+const API_URL = process.env.REACT_APP_API_URL;
 
 function resolveInitialLang() {
   const cookie    = Cookies.get("lang");
@@ -20,11 +20,12 @@ export function LangProvider({ children }) {
 
   const changeLang = (newLang) => {
     if (!SUPPORTED_LANGS.includes(newLang)) return;
+
     setLang(newLang);
     Cookies.set("lang", newLang, { expires: 365 });
     localStorage.setItem("lang", newLang);
 
-    fetch("/api/utils/lang", {
+    fetch(`${API_URL}/api/utils/lang`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -32,10 +33,8 @@ export function LangProvider({ children }) {
     }).catch(() => {});
   };
 
-  const t = useMemo(() => buildT(lang), [lang]);
-
   return (
-    <LangContext.Provider value={{ lang, changeLang, t }}>
+    <LangContext.Provider value={{ lang, changeLang }}>
       {children}
     </LangContext.Provider>
   );

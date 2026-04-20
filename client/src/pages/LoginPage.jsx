@@ -5,12 +5,14 @@ import { useAuth } from "../context/AuthContext";
 import "./AuthPage.css";
 
 export default function LoginPage() {
-  const { t, lang } = useLang();
+  const { lang } = useLang();
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm]       = useState({ email: "", password: "" });
-  const [error, setError]     = useState("");
+
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const API_URL = process.env.REACT_APP_API_URL;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,19 +23,25 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(form),
       });
+
       const data = await res.json();
-      if (!res.ok) return setError(t(data.message));
+
+      if (!res.ok) {
+        return setError(lang === "th" ? data.message_th : data.message_en);
+      }
+
       login(data.user, data.token);
       navigate("/");
     } catch {
-      setError(t("server_error"));
+      setError(lang === "th" ? "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์" : "Server error");
     } finally {
       setLoading(false);
     }
@@ -53,6 +61,7 @@ export default function LoginPage() {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
+            autoComplete="email"
             required
           />
           <input
@@ -61,6 +70,7 @@ export default function LoginPage() {
             placeholder={lang === "th" ? "รหัสผ่าน" : "Password"}
             value={form.password}
             onChange={handleChange}
+            autoComplete="current-password"
             required
           />
           <button type="submit" disabled={loading}>
