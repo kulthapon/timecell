@@ -47,6 +47,17 @@ services:
       timeout: 3s
       retries: 10
     restart: always
+  
+  # ai:
+  #   build: ./ai
+  #   container_name: timecell_ai
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - OPENAI_API_KEY=your_openai_api_key_here
+  #   depends_on:
+  #     - backend
+  #   restart: always
 
 volumes:
   timecell_data:

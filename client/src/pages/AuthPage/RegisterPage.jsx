@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useLang } from "../context/LangContext";
+import { useLang } from "../../context/LangContext";
 import "./AuthPage.css";
 
 export default function RegisterPage() {

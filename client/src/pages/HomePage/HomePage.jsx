@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useLang } from "../context/LangContext";
+import { useAuth } from "../../context/AuthContext";
+import { useLang } from "../../context/LangContext";
 import "./HomePage.css";
 
 export default function HomePage() {

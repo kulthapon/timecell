@@ -3,12 +3,15 @@ const bcrypt = require("bcrypt");
 const jwt    = require("jsonwebtoken");
 const { t }  = require("../utils/lang");
 
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS  = 10;
 const TOKEN_EXPIRY = "1d";
 
+const SUPPORTED_THEMES = ["light", "dark"];
+const DEFAULT_THEME    = "light";
+
 const COOKIE_OPTIONS = {
-  maxAge:   365 * 24 * 60 * 60 * 1000, // 1 year
-  httpOnly: false, // frontend can read this cookie
+  maxAge:   365 * 24 * 60 * 60 * 1000,
+  httpOnly: false,
   sameSite: "lax",
 };
 
@@ -19,7 +22,10 @@ const findUserByEmail = async (email) => {
 
 exports.register = async (req, res) => {
   const { firstname, lastname, email, password } = req.body;
-  const lang = req.lang;
+  const lang  = req.lang;
+  const theme = SUPPORTED_THEMES.includes(req.cookies?.theme)
+    ? req.cookies.theme
+    : DEFAULT_THEME;
 
   if (!firstname || !lastname || !email || !password) {
     return res.status(400).json({ message: "missing_fields" });
@@ -34,7 +40,7 @@ exports.register = async (req, res) => {
     const hashed = await bcrypt.hash(password, SALT_ROUNDS);
     await db.query(
       "INSERT INTO users (firstname, lastname, email, password, lang, theme) VALUES (?, ?, ?, ?, ?, ?)",
-      [firstname, lastname, email, hashed, lang, "light"]
+      [firstname, lastname, email, hashed, lang, theme]
     );
 
     res.status(201).json({ message: "register_success" });
@@ -46,7 +52,6 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  const lang = req.lang;
 
   if (!email || !password) {
     return res.status(400).json({ message: "missing_fields" });
@@ -69,9 +74,8 @@ exports.login = async (req, res) => {
       { expiresIn: TOKEN_EXPIRY }
     );
 
-    const { password: _, ...safeUser } = user; // exclude password from response
+    const { password: _, ...safeUser } = user;
 
-    // sync cookie with user settings
     res
       .cookie("lang",  user.lang,  COOKIE_OPTIONS)
       .cookie("theme", user.theme, COOKIE_OPTIONS)
