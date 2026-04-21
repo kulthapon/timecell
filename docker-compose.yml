@@ -4,6 +4,7 @@ services:
       context: ./client
       args:
         - REACT_APP_API_URL=http://localhost:5000
+        - REACT_APP_AI_URL=http://localhost:8000
     container_name: timecell_frontend
     ports:
       - "3000:3000"
@@ -54,9 +55,12 @@ services:
   #   ports:
   #     - "8000:8000"
   #   environment:
-  #     - OPENAI_API_KEY=your_openai_api_key_here
-  #   depends_on:
-  #     - backend
+  #     - CLIENT_URL=http://localhost:3000
+  #     - YOLO_MODEL_PATH=models/best.pt
+  #     - CLASSIFICATION_MODEL_PATH=models/efficientnetv2l.h5
+  #     - CLASSIFICATION_LABELS_PATH=models/labels.json
+  #   volumes:
+  #     - ./ai/models:/app/models
   #   restart: always
 
 volumes:
