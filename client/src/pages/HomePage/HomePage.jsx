@@ -8,17 +8,18 @@ export default function HomePage() {
   const { lang } = useLang();
 
   return (
-    <div className="home-wrapper">
+    <div className="wrapper">
       <div className="home-hero">
+        
         <h1>
           {isLoggedIn
             ? lang === "th" ? `ยินดีต้อนรับ, ${user?.firstname}!` : `Welcome, ${user?.firstname}!`
-            : lang === "th" ? "ยินดีต้อนรับสู่ MyApp" : "Welcome to MyApp"}
+            : lang === "th" ? "ยินดีต้อนรับสู่ Time Cell" : "Welcome to Time Cell"}
         </h1>
         <p>
           {lang === "th"
-            ? "แพลตฟอร์มสำหรับจัดการข้อมูลของคุณ"
-            : "A platform to manage your information"}
+            ? "ระบบวิเคราะห์และจำแนกภาพเซลล์เม็ดเลือดขาวจากของเหลวในร่างกาย"
+            : "System for analyzing and classifying white blood cell images from body fluids"}
         </p>
 
         {!isLoggedIn && (

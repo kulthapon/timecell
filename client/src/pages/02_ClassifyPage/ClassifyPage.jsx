@@ -1,121 +1,150 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useLang } from "../../context/LangContext";
 import "./ClassifyPage.css";
 
-const AI_URL = process.env.REACT_APP_AI_URL;
-const STEPS    = ["upload", "edit", "loading", "result"];
+const API_URL = process.env.REACT_APP_API_URL;
+const STEPS = ["upload", "edit", "loading", "result"];
 
-function useCrop(imageSize) {
-  const [crop, setCrop]         = useState(null);
+const PRESET_CROPS = [
+  { label: "Square", ratio: 1 },
+  { label: "4:3", ratio: 4 / 3 },
+  { label: "3:4", ratio: 3 / 4 },
+  { label: "16:9", ratio: 16 / 9 },
+];
+
+export default function ClassifyPage() {
+  const { lang } = useLang();
+
+  // -------------------------------
+  // STATE
+  // -------------------------------
+  const [step, setStep] = useState("upload");
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [naturalSize, setNaturalSize] = useState(null);
+
+  const [adj, setAdj] = useState({ brightness: 1, contrast: 1, color: 1 });
+  const [crop, setCrop] = useState(null);
   const [dragging, setDragging] = useState(false);
-  const startRef = useRef(null);
 
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+
+  const cropAreaRef = useRef(null);
+  const startRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // filter CSS for preview
+  const imgFilter = `
+    brightness(${adj.brightness})
+    contrast(${adj.contrast})
+    saturate(${adj.color})
+  `;
+
+  // -------------------------------
+  // เลือกรูป
+  // -------------------------------
+  const handleFile = (f) => {
+    if (!f) return;
+
+    setFile(f);
+    setError("");
+    setResult(null);
+    setCrop(null);
+
+    const url = URL.createObjectURL(f);
+    setPreview(url);
+
+    const img = new Image();
+    img.onload = () =>
+      setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = url;
+
+    setStep("edit");
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files?.[0];
+    if (f) handleFile(f);
+  };
+
+  // -------------------------------
+  // CALC POS
+  // -------------------------------
   const getPos = (e, el) => {
-    const rect  = el.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
     const touch = e.touches?.[0] ?? e;
+
     return {
       x: Math.max(0, Math.min(touch.clientX - rect.left, rect.width)),
-      y: Math.max(0, Math.min(touch.clientY - rect.top,  rect.height)),
+      y: Math.max(0, Math.min(touch.clientY - rect.top, rect.height)),
     };
   };
 
-  const onStart = (e, el) => {
+  // -------------------------------
+  // START CROP
+  // -------------------------------
+  const onStart = (e) => {
+    if (!cropAreaRef.current) return;
     e.preventDefault();
-    const pos = getPos(e, el);
+
+    const pos = getPos(e, cropAreaRef.current);
+
     startRef.current = pos;
     setCrop({ x: pos.x, y: pos.y, x2: pos.x, y2: pos.y });
     setDragging(true);
   };
 
-  const onMove = (e, el) => {
-    if (!dragging || !startRef.current) return;
+  const onMove = (e) => {
+    if (!dragging || !startRef.current || !cropAreaRef.current) return;
     e.preventDefault();
-    const pos = getPos(e, el);
+
+    const pos = getPos(e, cropAreaRef.current);
+
     setCrop({
-      x:  Math.min(startRef.current.x, pos.x),
-      y:  Math.min(startRef.current.y, pos.y),
+      x: Math.min(startRef.current.x, pos.x),
+      y: Math.min(startRef.current.y, pos.y),
       x2: Math.max(startRef.current.x, pos.x),
       y2: Math.max(startRef.current.y, pos.y),
     });
   };
 
   const onEnd = () => setDragging(false);
-  const reset = () => { setCrop(null); startRef.current = null; };
 
+  const resetCrop = () => {
+    setCrop(null);
+    startRef.current = null;
+  };
+
+  // -------------------------------
+  // CROP → IMAGE COORD
+  // -------------------------------
   const toImageCoords = (elW, elH) => {
-    if (!crop || !imageSize) return null;
-    const scaleX = imageSize.w / elW;
-    const scaleY = imageSize.h / elH;
+    if (!crop || !naturalSize) return null;
+
+    const scaleX = naturalSize.w / elW;
+    const scaleY = naturalSize.h / elH;
+
     return {
-      x:  Math.round(crop.x  * scaleX),
-      y:  Math.round(crop.y  * scaleY),
-      x2: Math.round(crop.x2 * scaleX),
-      y2: Math.round(crop.y2 * scaleY),
+      x: Math.round(crop.x * scaleX),
+      y: Math.round(crop.y * scaleY),
+      w: Math.round((crop.x2 - crop.x) * scaleX),
+      h: Math.round((crop.y2 - crop.y) * scaleY),
     };
   };
 
-  return { crop, onStart, onMove, onEnd, reset, toImageCoords };
-}
-
-export default function ClassifyPage() {
-  const { lang } = useLang();
-
-  const [step,      setStep]      = useState("upload");
-  const [file,      setFile]      = useState(null);
-  const [preview,   setPreview]   = useState(null);
-  const [imageSize, setImageSize] = useState(null);
-  const [adj, setAdj]  = useState({ brightness: 1, contrast: 1, color: 1 });
-  const [result,    setResult]    = useState(null);
-  const [loadPct,   setLoadPct]   = useState(0);
-  const [error,     setError]     = useState("");
-
-  const cropAreaRef  = useRef(null);
-  const fileInputRef = useRef(null);
-  const { crop, onStart, onMove, onEnd, reset: resetCrop, toImageCoords } = useCrop(imageSize);
-
-  const stepIndex  = STEPS.indexOf(step);
-  const progressPct =
-    step === "upload"  ? 0  :
-    step === "edit"    ? 33 :
-    step === "loading" ? 66 :
-    step === "result"  ? 100 : 0;
-
-  useEffect(() => {
-    if (step !== "loading") return;
-    setLoadPct(0);
-    const start = Date.now();
-    const timer = setInterval(() => {
-      const pct = Math.min(90, ((Date.now() - start) / 3000) * 90);
-      setLoadPct(Math.round(pct));
-    }, 80);
-    return () => clearInterval(timer);
-  }, [step]);
-
-  const handleFile = (f) => {
-    if (!f || !f.type.startsWith("image/")) return;
-    setFile(f);
-    setError("");
-    const url = URL.createObjectURL(f);
-    setPreview(url);
-    const img = new Image();
-    img.onload = () => setImageSize({ w: img.naturalWidth, h: img.naturalHeight });
-    img.src = url;
-    setStep("edit");
-    resetCrop();
-    setAdj({ brightness: 1, contrast: 1, color: 1 });
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    handleFile(e.dataTransfer.files?.[0]);
-  };
-
+  // -------------------------------
+  // ส่งเข้า Backend
+  // -------------------------------
   const handleAnalyze = async () => {
     if (!file) return;
+
     setStep("loading");
     setError("");
+    setResult(null);
 
-    const el     = cropAreaRef.current;
+    const el = cropAreaRef.current;
     const coords = el ? toImageCoords(el.clientWidth, el.clientHeight) : null;
 
     const form = new FormData();
@@ -127,48 +156,41 @@ export default function ClassifyPage() {
     if (coords) {
       form.append("crop_x", coords.x);
       form.append("crop_y", coords.y);
-      form.append("crop_x2", coords.x2);
-      form.append("crop_y2", coords.y2);
+      form.append("crop_w", coords.w);
+      form.append("crop_h", coords.h);
     }
 
     try {
-      const res  = await fetch(`${AI_URL}/classify/adjust`, {
+      const res = await fetch(`${API_URL}/api/ai/classify`, {
         method: "POST",
         body: form,
       });
 
       const data = await res.json();
 
-      setLoadPct(100);
-      await new Promise((r) => setTimeout(r, 400));
+      if (data.error) {
+        setError(data.error);
+        setStep("edit");
+        return;
+      }
 
       setResult(data);
       setStep("result");
-
     } catch {
-      setError(
-        lang === "th"
-          ? "เชื่อมต่อ server ไม่ได้"
-          : "Cannot connect to server"
-      );
+      setError("เชื่อมต่อ server ไม่ได้");
       setStep("edit");
     }
   };
 
-  const imgFilter = `brightness(${adj.brightness}) contrast(${adj.contrast}) saturate(${adj.color})`;
+  const stepIndex = STEPS.indexOf(step);
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <div className="cls-wrapper">
 
-      {/* Progress */}
-      <div className="cls-progress-track">
-        <div
-          className="cls-progress-bar"
-          style={{ width: step === "loading" ? `${loadPct}%` : `${progressPct}%` }}
-        />
-      </div>
-
-      {/* Steps */}
+      {/* STEP INDICATOR */}
       <div className="cls-steps">
         {[
           lang === "th" ? "อัปโหลด" : "Upload",
@@ -178,8 +200,11 @@ export default function ClassifyPage() {
           <div
             key={i}
             className={`cls-step ${
-              stepIndex > i ? "done" :
-              stepIndex === i || (i === 1 && step === "loading") ? "active" : ""
+              stepIndex > i
+                ? "done"
+                : stepIndex === i || (i === 1 && step === "loading")
+                ? "active"
+                : ""
             }`}
           >
             <div className="cls-step-dot">
@@ -190,13 +215,9 @@ export default function ClassifyPage() {
         ))}
       </div>
 
-      {/* Upload */}
+      {/* ===================== UPLOAD ===================== */}
       {step === "upload" && (
         <div className="cls-card">
-          <span className="cls-badge">
-            {lang === "th" ? "ไม่ต้องเข้าสู่ระบบ" : "No login required"}
-          </span>
-
           <div
             className="cls-dropzone"
             onDrop={handleDrop}
@@ -221,10 +242,11 @@ export default function ClassifyPage() {
         </div>
       )}
 
-      {/* Edit */}
+      {/* ===================== EDIT ===================== */}
       {step === "edit" && preview && (
         <div className="cls-edit-layout">
 
+          {/* LEFT: IMAGE */}
           <div className="cls-card">
             <p>
               {lang === "th"
@@ -232,48 +254,175 @@ export default function ClassifyPage() {
                 : "Drag to crop — press Reset to clear"}
             </p>
 
-            <div
-              ref={cropAreaRef}
-              onMouseDown={(e) => onStart(e, cropAreaRef.current)}
-              onMouseMove={(e) => onMove(e, cropAreaRef.current)}
-              onMouseUp={onEnd}
-            >
-              <img src={preview} style={{ filter: imgFilter }} />
+            {/* PRESET BUTTONS */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+              {PRESET_CROPS.map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => resetCrop()}
+                  style={{
+                    fontSize: 12,
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    border: "1px solid #ccc",
+                    background: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+
+              {crop && (
+                <button
+                  onClick={resetCrop}
+                  style={{
+                    fontSize: 12,
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    border: "1px solid #e24b4a",
+                    background: "#fff",
+                    color: "#e24b4a",
+                  }}
+                >
+                  ล้าง crop
+                </button>
+              )}
             </div>
 
-            <button onClick={resetCrop}>
-              {lang === "th" ? "ล้างการครอป" : "Reset crop"}
-            </button>
+            {/* CROP AREA */}
+            <div
+              ref={cropAreaRef}
+              style={{
+                position: "relative",
+                cursor: "crosshair",
+                userSelect: "none",
+                borderRadius: 8,
+                overflow: "hidden",
+                lineHeight: 0,
+                touchAction: "none",
+              }}
+              onMouseDown={onStart}
+              onMouseMove={onMove}
+              onMouseUp={onEnd}
+              onTouchStart={onStart}
+              onTouchMove={onMove}
+              onTouchEnd={onEnd}
+            >
+              <img
+                src={preview}
+                alt="preview"
+                style={{
+                  width: "100%",
+                  display: "block",
+                  filter: imgFilter,
+                  pointerEvents: "none",
+                }}
+                draggable={false}
+              />
 
-            {error && <p>{error}</p>}
+              {crop && (
+                <>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(0,0,0,0.35)",
+                      pointerEvents: "none",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: crop.x,
+                      top: crop.y,
+                      width: crop.x2 - crop.x,
+                      height: crop.y2 - crop.y,
+                      border: "2px solid #fff",
+                      boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)",
+                      pointerEvents: "none",
+                    }}
+                  />
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="cls-card">
+          {/* RIGHT: SLIDER + BUTTON */}
+          <div>
+            {/* FILTER SLIDERS */}
+            <div
+              style={{
+                background: "#f9f9f9",
+                borderRadius: 8,
+                padding: 16,
+                marginBottom: 16,
+              }}
+            >
+              <p style={{ fontWeight: 500, marginBottom: 12 }}>ปรับภาพ</p>
+
+              {[
+                { key: "brightness", label: "ความสว่าง", min: 0.2, max: 2 },
+                { key: "contrast", label: "ความคมชัด", min: 0.2, max: 2 },
+                { key: "color", label: "สี", min: 0, max: 2 },
+              ].map(({ key, label, min, max }) => (
+                <div key={key} style={{ marginBottom: 12 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span>{label}</span>
+                    <span style={{ color: "#666" }}>
+                      {adj[key].toFixed(2)}
+                    </span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min={min}
+                    max={max}
+                    step={0.05}
+                    value={adj[key]}
+                    onChange={(e) =>
+                      setAdj({ ...adj, [key]: +e.target.value })
+                    }
+                  />
+                </div>
+              ))}
+
+              <button
+                onClick={() =>
+                  setAdj({ brightness: 1, contrast: 1, color: 1 })
+                }
+              >
+                รีเซ็ต
+              </button>
+            </div>
+
+            {error && <p className="cls-error">{error}</p>}
+
             <button onClick={handleAnalyze}>
               {lang === "th" ? "วิเคราะห์ภาพ" : "Analyze image"}
             </button>
           </div>
-
         </div>
       )}
 
-      {/* Loading */}
+      {/* ===================== LOADING ===================== */}
       {step === "loading" && (
         <div className="cls-card">
-          <p>
-            {lang === "th"
-              ? "กำลังวิเคราะห์ภาพ..."
-              : "Analyzing image..."}
-          </p>
+          <p>{lang === "th" ? "กำลังวิเคราะห์ภาพ..." : "Analyzing image..."}</p>
         </div>
       )}
 
-      {/* Result */}
+      {/* ===================== RESULT ===================== */}
       {step === "result" && result && (
         <div className="cls-card">
-          <h2>
-            {lang === "th" ? "ผลลัพธ์หลัก" : "Top result"}
-          </h2>
+          <h2>{lang === "th" ? "ผลลัพธ์หลัก" : "Top result"}</h2>
 
           <p>{result.top?.label}</p>
 

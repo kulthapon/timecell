@@ -2,6 +2,8 @@ require("dotenv").config();
 const express        = require("express");
 const cookieParser   = require("cookie-parser");
 const cors           = require("cors");
+const path          = require("path");
+const aiRoutes      = require("./routes/aiRoutes");
 
 const authRoutes     = require("./routes/authRoutes");
 const utilsRoutes     = require("./routes/utilsRoutes");
@@ -21,10 +23,11 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/utils", utilsRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/ai", aiRoutes);
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Health check
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

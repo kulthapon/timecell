@@ -4,7 +4,6 @@ services:
       context: ./client
       args:
         - REACT_APP_API_URL=http://localhost:5000
-        - REACT_APP_AI_URL=http://localhost:8000
     container_name: timecell_frontend
     ports:
       - "3000:3000"
@@ -20,12 +19,16 @@ services:
     container_name: timecell_backend
     ports:
       - "5000:5000"
+    volumes:
+      - uploads_data:/app/uploads
     environment:
       - JWT_SECRET=supersecretkey
       - DB_HOST=db
       - DB_USER=root
       - DB_PASSWORD=1234
       - DB_NAME=TimeCell_db
+      - CLIENT_URL= http://localhost:3000
+      - AI_URL=http://ai:8000
     depends_on:
       db:
         condition: service_healthy
@@ -49,19 +52,22 @@ services:
       retries: 10
     restart: always
   
-  # ai:
-  #   build: ./ai
-  #   container_name: timecell_ai
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - CLIENT_URL=http://localhost:3000
-  #     - YOLO_MODEL_PATH=models/best.pt
-  #     - CLASSIFICATION_MODEL_PATH=models/efficientnetv2l.h5
-  #     - CLASSIFICATION_LABELS_PATH=models/labels.json
-  #   volumes:
-  #     - ./ai/models:/app/models
-  #   restart: always
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: timecell_ai
+    ports:
+      - "8000:8000"
+    environment:
+      - CLIENT_URL=http://localhost:3000
+      - YOLO_MODEL_PATH=models/best.pt
+      - CLASSIFICATION_MODEL_PATH=models/model.h5
+      - CLASSIFICATION_LABELS_PATH=models/labels.json
+    volumes:
+      - ./ai/models:/app/models
+    restart: always
 
 volumes:
   timecell_data:
+  uploads_data:

@@ -1,6 +1,7 @@
 fastapi
-uvicorn
+uvicorn[standard]
 ultralytics
 pillow
 python-multipart
 numpy
+tensorflow-cpu

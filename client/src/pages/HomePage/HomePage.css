@@ -1,10 +1,9 @@
-.home-wrapper {
-  min-height: calc(100vh - 60px);
+.wrapper {
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-sub);
-  padding: 2rem;
+  box-sizing: border-box;
 }
 
 .home-hero {

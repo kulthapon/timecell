@@ -1,26 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useLang } from "../../context/LangContext";
 import "./RealtimePage.css";
 
-export default function DetectPage() {
+export default function RealtimePage() {
   const { lang } = useLang();
 
-  const AI_URL = process.env.REACT_APP_AI_URL;
+  const API_URL = process.env.REACT_APP_API_URL;
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const isSendingRef = useRef(false);
 
   const [streaming, setStreaming] = useState(false);
   const [detections, setDetections] = useState([]);
   const [error, setError] = useState("");
   const [savedImages, setSavedImages] = useState([]);
 
-  // open camera
+  /* ------------------------------------------------------------------
+     START CAMERA
+  ------------------------------------------------------------------ */
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
       });
+
       videoRef.current.srcObject = stream;
       setStreaming(true);
       setError("");
@@ -33,18 +37,23 @@ export default function DetectPage() {
     }
   };
 
-  // close camera
+  /* ------------------------------------------------------------------
+     STOP CAMERA
+  ------------------------------------------------------------------ */
   const stopCamera = () => {
     const stream = videoRef.current?.srcObject;
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-    }
+    if (stream) stream.getTracks().forEach((t) => t.stop());
     setStreaming(false);
   };
 
-  // send frame to YOLO and get detections
-  const sendFrame = async () => {
+  /* ------------------------------------------------------------------
+     SEND FRAME TO AI (useCallback)
+  ------------------------------------------------------------------ */
+  const sendFrame = useCallback(async () => {
+    if (isSendingRef.current) return; // prevent overlap
     if (!videoRef.current || !canvasRef.current) return;
+
+    isSendingRef.current = true;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -54,15 +63,15 @@ export default function DetectPage() {
 
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob(resolve, "image/jpeg");
-    });
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg")
+    );
 
     const formData = new FormData();
     formData.append("file", blob, "frame.jpg");
 
     try {
-      const res = await fetch(`${AI_URL}/detect`, {
+      const res = await fetch(`${API_URL}/realtime`, {
         method: "POST",
         body: formData,
       });
@@ -73,6 +82,7 @@ export default function DetectPage() {
             ? "เชื่อมต่อ YOLO server ไม่ได้"
             : "Cannot connect to YOLO server"
         );
+        isSendingRef.current = false;
         return;
       }
 
@@ -80,35 +90,42 @@ export default function DetectPage() {
 
       if (!data.detections) {
         setError(
-          lang === "th"
-            ? "รูปแบบข้อมูลไม่ถูกต้อง"
-            : "Invalid detection format"
+          lang === "th" ? "รูปแบบข้อมูลไม่ถูกต้อง" : "Invalid detection format"
         );
+        isSendingRef.current = false;
         return;
       }
 
       setDetections(data.detections);
-    } catch (err) {
+    } catch {
       setError(
-        lang === "th"
-          ? "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์"
-          : "Server error"
+        lang === "th" ? "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์" : "Server error"
       );
     }
-  };
 
-  // AI Loop
+    isSendingRef.current = false;
+  }, [API_URL, lang]);
+
+  /* ------------------------------------------------------------------
+     AI LOOP
+  ------------------------------------------------------------------ */
   useEffect(() => {
     let interval = null;
+
     if (streaming) {
       interval = setInterval(sendFrame, 400);
     } else {
       setDetections([]);
     }
-    return () => clearInterval(interval);
-  }, [streaming]);
 
-  // capture image
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [streaming, sendFrame]);
+
+  /* ------------------------------------------------------------------
+     CAPTURE IMAGE
+  ------------------------------------------------------------------ */
   const captureImage = () => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -132,23 +149,14 @@ export default function DetectPage() {
     setSavedImages((prev) => [saveObj, ...prev]);
   };
 
-  const removeAll = () => {
-    setSavedImages([]);
-  };
+  const removeAll = () => setSavedImages([]);
 
+  /* ------------------------------------------------------------------
+     RENDER
+  ------------------------------------------------------------------ */
   return (
     <div className="detect-wrapper">
-      <h2>
-        {lang === "th" ? "ตรวจจับวัตถุแบบเรียลไทม์" : "Real-time object detection"}
-      </h2>
-
       {error && <p className="error-box">{error}</p>}
-
-      {/* Video + Canvas */}
-      <div className="camera-zone">
-        <video ref={videoRef} autoPlay playsInline className="video-feed" />
-        <canvas ref={canvasRef} className="hidden-canvas"></canvas>
-      </div>
 
       {/* Buttons */}
       <div className="btn-row">
@@ -171,7 +179,13 @@ export default function DetectPage() {
         </button>
       </div>
 
-      {/* Detection list */}
+      {/* Video + Canvas */}
+      <div className="camera-zone">
+        <video ref={videoRef} autoPlay playsInline className="video-feed" />
+        <canvas ref={canvasRef} className="hidden-canvas" />
+      </div>
+
+      {/* Detection List */}
       <div className="detect-list">
         <h3>
           {lang === "th" ? "ผลการตรวจจับ" : "Detected objects"} (
@@ -193,10 +207,11 @@ export default function DetectPage() {
         )}
       </div>
 
-      {/* Saved images */}
+      {/* Saved Images */}
       <div className="saved-box">
         <h3>
-          {lang === "th" ? "ภาพที่บันทึก" : "Saved images"} ({savedImages.length})
+          {lang === "th" ? "ภาพที่บันทึก" : "Saved images"} (
+          {savedImages.length})
         </h3>
 
         {savedImages.length > 0 && (
@@ -208,7 +223,7 @@ export default function DetectPage() {
         <div className="saved-grid">
           {savedImages.map((img) => (
             <div className="saved-item" key={img.id}>
-              <img src={img.image} alt="" />
+              <img src={img.image} alt="captured" />
               <div className="saved-meta">
                 <p>
                   {lang === "th" ? "วัตถุ" : "Objects"}:{" "}

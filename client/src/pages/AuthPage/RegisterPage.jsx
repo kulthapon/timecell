@@ -74,25 +74,22 @@ export default function RegisterPage() {
         {success && <p className="auth-success">{success}</p>}
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <div className="auth-row">
-            <input
-              name="firstname"
-              placeholder={lang === "th" ? "ชื่อ" : "First name"}
-              value={form.firstname}
-              onChange={handleChange}
-              autoComplete="given-name"
-              required
-            />
-            <input
-              name="lastname"
-              placeholder={lang === "th" ? "นามสกุล" : "Last name"}
-              value={form.lastname}
-              onChange={handleChange}
-              autoComplete="family-name"
-              required
-            />
-          </div>
-
+          <input
+            name="firstname"
+            placeholder={lang === "th" ? "ชื่อ" : "First name"}
+            value={form.firstname}
+            onChange={handleChange}
+            autoComplete="given-name"
+            required
+          />
+          <input
+            name="lastname"
+            placeholder={lang === "th" ? "นามสกุล" : "Last name"}
+            value={form.lastname}
+            onChange={handleChange}
+            autoComplete="family-name"
+            required
+          />
           <input
             name="email"
             type="email"
@@ -102,7 +99,6 @@ export default function RegisterPage() {
             autoComplete="email"
             required
           />
-
           <input
             name="password"
             type="password"

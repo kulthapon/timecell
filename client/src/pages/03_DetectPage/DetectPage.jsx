@@ -8,7 +8,6 @@ const AI_URL = process.env.REACT_APP_AI_URL;
 
 /* -------------------- PDF -------------------- */
 function generatePdfReport(results, summary, lang) {
-  const title        = lang === "th" ? "ตรวจจับแบบกลุ่มภาพ" : "Batch Object Detection";
   const imagesTxt    = lang === "th" ? "ภาพ" : "images";
   const totalFound   = lang === "th" ? "พบทั้งหมด" : "Total found";
   const itemsTxt     = lang === "th" ? "รายการ" : "items";
@@ -27,7 +26,6 @@ function generatePdfReport(results, summary, lang) {
   h2{font-size:16px;margin:1.5rem 0 0.5rem}
 </style></head><body>
 
-<h1>${title}</h1>
 <p class="sub">${date} · ${results.length} ${imagesTxt} · ${totalFound} ${summary.total} ${itemsTxt}</p>
 
 <h2>${classSummary}</h2>
@@ -383,7 +381,7 @@ export default function BatchDetectPage() {
                     <div className="crop-grid">
                       {r.crops.map((c, i) => (
                         <div key={i} className="crop-item">
-                          <img src={c.dataUrl} />
+                          <img src={c.dataUrl} alt={c.label} />
                           <span>
                             {c.label} ({Math.round(c.confidence*100)}%)
                           </span>

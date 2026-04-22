@@ -12,3 +12,14 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS history (
+  id          INT          NOT NULL AUTO_INCREMENT,
+  user_id     INT          NULL,
+  type        ENUM('realtime','classify','detect') NOT NULL,
+  image_path  VARCHAR(500) NOT NULL,
+  result_json JSON         NOT NULL,
+  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
