@@ -27,11 +27,15 @@ services:
       - DB_USER=root
       - DB_PASSWORD=1234
       - DB_NAME=TimeCell_db
-      - CLIENT_URL= http://localhost:3000
+      - CLIENT_URL=http://localhost:3000
       - AI_URL=http://ai:8000
+
     depends_on:
       db:
         condition: service_healthy
+      ai:
+        condition: service_healthy
+
     restart: always
 
   db:
@@ -45,13 +49,16 @@ services:
     volumes:
       - timecell_data:/var/lib/mysql
       - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 3s
       retries: 10
+      start_period: 10s
+
     restart: always
-  
+
   ai:
     build:
       context: ./ai
@@ -59,14 +66,24 @@ services:
     container_name: timecell_ai
     ports:
       - "8000:8000"
+
     environment:
       - CLIENT_URL=http://localhost:3000
       - YOLO_MODEL_PATH=models/best.pt
       - CLASSIFICATION_MODEL_PATH=models/model.h5
       - CLASSIFICATION_LABELS_PATH=models/labels.json
+
     volumes:
       - ./ai/models:/app/models
+
     restart: always
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
 
 volumes:
   timecell_data:

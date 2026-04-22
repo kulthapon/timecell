@@ -4,21 +4,21 @@ import "./RealtimePage.css";
 
 export default function RealtimePage() {
   const { lang } = useLang();
-
   const API_URL = process.env.REACT_APP_API_URL;
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const isSendingRef = useRef(false);
+  const loopRef = useRef(null);
+  const lastSendRef = useRef(0);
 
   const [streaming, setStreaming] = useState(false);
   const [detections, setDetections] = useState([]);
   const [error, setError] = useState("");
   const [savedImages, setSavedImages] = useState([]);
 
-  /* ------------------------------------------------------------------
-     START CAMERA
-  ------------------------------------------------------------------ */
+  /* --------------------------------------------------
+   CAMERA
+  -------------------------------------------------- */
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -29,136 +29,151 @@ export default function RealtimePage() {
       setStreaming(true);
       setError("");
     } catch {
-      setError(
-        lang === "th"
-          ? "กรุณาอนุญาตการเข้าถึงกล้อง"
-          : "Please allow camera access"
+      setError(lang === "th"
+        ? "กรุณาอนุญาตการเข้าถึงกล้อง"
+        : "Please allow camera access"
       );
     }
   };
 
-  /* ------------------------------------------------------------------
-     STOP CAMERA
-  ------------------------------------------------------------------ */
   const stopCamera = () => {
     const stream = videoRef.current?.srcObject;
     if (stream) stream.getTracks().forEach((t) => t.stop());
+
     setStreaming(false);
+
+    if (loopRef.current) {
+      cancelAnimationFrame(loopRef.current);
+    }
   };
 
-  /* ------------------------------------------------------------------
-     SEND FRAME TO AI (useCallback)
-  ------------------------------------------------------------------ */
+  /* --------------------------------------------------
+   SEND FRAME (AI - throttle 10 FPS)
+  -------------------------------------------------- */
   const sendFrame = useCallback(async () => {
-    if (isSendingRef.current) return; // prevent overlap
-    if (!videoRef.current || !canvasRef.current) return;
-
-    isSendingRef.current = true;
+    if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
     const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg")
+      canvas.toBlob(resolve, "image/jpeg", 0.6)
     );
 
     const formData = new FormData();
     formData.append("file", blob, "frame.jpg");
 
     try {
-      const res = await fetch(`${API_URL}/realtime`, {
+      const res = await fetch(`${API_URL}/api/ai/realtime`, {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) {
-        setError(
-          lang === "th"
-            ? "เชื่อมต่อ YOLO server ไม่ได้"
-            : "Cannot connect to YOLO server"
-        );
-        isSendingRef.current = false;
-        return;
-      }
-
       const data = await res.json();
 
-      if (!data.detections) {
-        setError(
-          lang === "th" ? "รูปแบบข้อมูลไม่ถูกต้อง" : "Invalid detection format"
-        );
-        isSendingRef.current = false;
-        return;
+      if (data?.detections) {
+        setDetections(data.detections);
       }
-
-      setDetections(data.detections);
     } catch {
-      setError(
-        lang === "th" ? "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์" : "Server error"
-      );
+      setError(lang === "th" ? "Server error" : "Server error");
     }
-
-    isSendingRef.current = false;
   }, [API_URL, lang]);
 
-  /* ------------------------------------------------------------------
-     AI LOOP
-  ------------------------------------------------------------------ */
-  useEffect(() => {
-    let interval = null;
+  /* --------------------------------------------------
+   DRAW DETECTIONS
+  -------------------------------------------------- */
+  const drawDetections = (ctx, detections) => {
+    ctx.lineWidth = 2;
+    ctx.font = "14px Arial";
 
+    detections.forEach((d) => {
+      const { x, y, x2, y2 } = d.bbox;
+
+      ctx.strokeStyle = "red";
+      ctx.strokeRect(x, y, x2 - x, y2 - y);
+
+      ctx.fillStyle = "red";
+      ctx.fillText(
+        `${d.label} ${(d.confidence * 100).toFixed(0)}%`,
+        x,
+        y > 10 ? y - 5 : 10
+      );
+    });
+  };
+
+  /* --------------------------------------------------
+   REALTIME LOOP (30 FPS render + 10 FPS AI)
+  -------------------------------------------------- */
+  const FPS_LIMIT = 10;
+  const INTERVAL = 1000 / FPS_LIMIT;
+
+  const renderLoop = useCallback((timestamp) => {
+    if (!streaming) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (video && canvas) {
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      // 1. วาด video (30 FPS)
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // 2. วาด AI overlay
+      drawDetections(ctx, detections);
+
+      // 3. ส่ง AI แบบ throttle (10 FPS)
+      if (timestamp - lastSendRef.current > INTERVAL) {
+        lastSendRef.current = timestamp;
+        sendFrame();
+      }
+    }
+
+    loopRef.current = requestAnimationFrame(renderLoop);
+  }, [streaming, detections, sendFrame]);
+
+  /* START LOOP */
+  useEffect(() => {
     if (streaming) {
-      interval = setInterval(sendFrame, 400);
-    } else {
-      setDetections([]);
+      loopRef.current = requestAnimationFrame(renderLoop);
     }
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (loopRef.current) {
+        cancelAnimationFrame(loopRef.current);
+      }
     };
-  }, [streaming, sendFrame]);
+  }, [streaming, renderLoop]);
 
-  /* ------------------------------------------------------------------
-     CAPTURE IMAGE
-  ------------------------------------------------------------------ */
+  /* --------------------------------------------------
+   CAPTURE IMAGE
+  -------------------------------------------------- */
   const captureImage = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
     const imageURL = canvas.toDataURL("image/jpeg");
 
-    const saveObj = {
-      id: Date.now(),
-      image: imageURL,
-      detections: [...detections],
-      time: new Date().toLocaleString(lang === "th" ? "th-TH" : "en-US"),
-    };
-
-    setSavedImages((prev) => [saveObj, ...prev]);
+    setSavedImages((prev) => [
+      {
+        id: Date.now(),
+        image: imageURL,
+        detections: [...detections],
+        time: new Date().toLocaleString(),
+      },
+      ...prev,
+    ]);
   };
 
   const removeAll = () => setSavedImages([]);
 
-  /* ------------------------------------------------------------------
-     RENDER
-  ------------------------------------------------------------------ */
+  /* --------------------------------------------------
+   UI
+  -------------------------------------------------- */
   return (
     <div className="detect-wrapper">
       {error && <p className="error-box">{error}</p>}
 
-      {/* Buttons */}
       <div className="btn-row">
         {!streaming ? (
           <button onClick={startCamera} className="btn start">
@@ -179,13 +194,12 @@ export default function RealtimePage() {
         </button>
       </div>
 
-      {/* Video + Canvas */}
       <div className="camera-zone">
         <video ref={videoRef} autoPlay playsInline className="video-feed" />
-        <canvas ref={canvasRef} className="hidden-canvas" />
+        <canvas ref={canvasRef} className="video-canvas" />
       </div>
 
-      {/* Detection List */}
+      {/* DETECTIONS */}
       <div className="detect-list">
         <h3>
           {lang === "th" ? "ผลการตรวจจับ" : "Detected objects"} (
@@ -200,14 +214,14 @@ export default function RealtimePage() {
           <ul>
             {detections.map((d, i) => (
               <li key={i}>
-                {d.class} ({Math.round(d.conf * 100)}%)
+                {d.label} ({Math.round(d.confidence * 100)}%)
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* Saved Images */}
+      {/* SAVED IMAGES */}
       <div className="saved-box">
         <h3>
           {lang === "th" ? "ภาพที่บันทึก" : "Saved images"} (
@@ -223,14 +237,9 @@ export default function RealtimePage() {
         <div className="saved-grid">
           {savedImages.map((img) => (
             <div className="saved-item" key={img.id}>
-              <img src={img.image} alt="captured" />
-              <div className="saved-meta">
-                <p>
-                  {lang === "th" ? "วัตถุ" : "Objects"}:{" "}
-                  {img.detections.length}
-                </p>
-                <p>{img.time}</p>
-              </div>
+              <img src={img.image} alt="capture" />
+              <p>{img.detections.length} objects</p>
+              <small>{img.time}</small>
             </div>
           ))}
         </div>

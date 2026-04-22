@@ -79,30 +79,31 @@ def run_classification(image: Image.Image) -> list:
 # ════════════════════════════════════════════════
 # 1. YOLO realtime
 # ════════════════════════════════════════════════
-@app.post("/detect/realtime")
+@app.post("/realtime")
 async def detect_realtime(file: UploadFile = File(...)):
     if yolo_model is None:
         return JSONResponse({"error": "YOLO model not loaded"}, status_code=503)
 
-    contents  = await file.read()
-    image     = Image.open(io.BytesIO(contents)).convert("RGB")
-    results   = yolo_model(image, verbose=False)
-    result    = results[0]
+    contents = await file.read()
+    image = Image.open(io.BytesIO(contents)).convert("RGB")
+    results = yolo_model(image, verbose=False)
+    result = results[0]
     annotated = Image.fromarray(result.plot())
 
-    detections = [
-        {
-            "label":      result.names[int(box.cls)],
-            "confidence": round(float(box.conf), 2),
+    detections = []
+
+    for box in result.boxes:
+        detections.append({
+            "label": result.names[int(box.cls)],
+            "conf":  float(box.conf),
             "bbox": {
                 "x":  round(float(box.xyxy[0][0])),
                 "y":  round(float(box.xyxy[0][1])),
                 "x2": round(float(box.xyxy[0][2])),
-                "y2": round(float(box.xyxy[0][3])),
-            },
-        }
-        for box in result.boxes
-    ]
+                "y2": round(float(box.xyxy[0][3]))
+            }
+        })
+
     return JSONResponse({
         "image":      to_b64(annotated),
         "detections": detections,
@@ -143,7 +144,7 @@ async def classify(
     results = run_classification(image)
 
     return JSONResponse({
-        "preview": to_b64(image),   # ภาพหลัง crop+adjust
+        "preview": to_b64(image),
         "results": results,
         "top":     results[0] if results else None,
     })
@@ -151,7 +152,7 @@ async def classify(
 # ════════════════════════════════════════════════
 # 3. Batch YOLO detect + crop per class
 # ════════════════════════════════════════════════
-@app.post("/detect/batch")
+@app.post("/detect")
 async def detect_batch(files: list[UploadFile] = File(...)):
     if yolo_model is None:
         return JSONResponse({"error": "YOLO model not loaded"}, status_code=503)

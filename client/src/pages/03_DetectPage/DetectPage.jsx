@@ -4,7 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 import "./DetectPage.css";
 
 const API_URL = process.env.REACT_APP_API_URL;
-const AI_URL = process.env.REACT_APP_AI_URL;
 
 /* -------------------- PDF -------------------- */
 function generatePdfReport(results, summary, lang) {
@@ -113,7 +112,7 @@ export default function BatchDetectPage() {
       form.append("file", file, file.name);
 
       try {
-        const res  = await fetch(`${AI_URL}/detect`, { method: "POST", body: form });
+        const res  = await fetch(`${API_URL}/api/ai/detect`, { method: "POST", body: form });
         const data = await res.json();
         const crops = await cropDetections(previewUrl, data.detections);
         allResults.push({
@@ -155,7 +154,7 @@ export default function BatchDetectPage() {
       const headers = { "Content-Type": "application/json" };
       if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`;
 
-      const r = await fetch(`${API_URL}/batch/save`, {
+      const r = await fetch(`${API_URL}/detect/save`, {
         method: "POST",
         headers,
         credentials: "include",

@@ -9,9 +9,9 @@ const upload = multer({
   limits:  { fileSize: 20 * 1024 * 1024 },
 });
 
-router.post("/realtime", upload.single("file"),  aiController.detectRealtime);
+router.post("/realtime", upload.single("file"),  aiController.realtime);
 router.post("/classify", upload.single("file"),  aiController.classify);
-router.post("/detect",   upload.array("files"),  aiController.detectBatch);
-router.get ("/history",  requireAuth,            aiController.getHistory);
+router.post("/detect",   upload.array("files"),  aiController.detect);
+router.get ("/history",  requireAuth,            aiController.history);
 
 module.exports = router;

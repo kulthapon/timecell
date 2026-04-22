@@ -4,4 +4,5 @@ ultralytics
 pillow
 python-multipart
 numpy
-tensorflow-cpu
+tensorflow==2.13.0
+keras==2.13.1

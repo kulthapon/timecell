@@ -15,7 +15,7 @@ function saveBase64(b64, filename) {
 }
 
 // ── 1. Realtime ───────────────────────────────
-exports.detectRealtime = async (req, res) => {
+exports.realtime = async (req, res) => {
   const form = new FormData();
   form.append("file", req.file.buffer, {
     filename:    req.file.originalname,
@@ -58,7 +58,7 @@ exports.classify = async (req, res) => {
 };
 
 // ── 3. Batch detect + บันทึก history ──────────
-exports.detectBatch = async (req, res) => {
+exports.detect = async (req, res) => {
   const form = new FormData();
   for (const file of req.files) {
     form.append("files", file.buffer, {
@@ -110,7 +110,7 @@ exports.detectBatch = async (req, res) => {
 };
 
 // history (user_id, type, image_path, result_json, created_at)
-exports.getHistory = async (req, res) => {
+exports.history = async (req, res) => {
   const userId = req.user.id;
   try {
     const [rows] = await db.query(
