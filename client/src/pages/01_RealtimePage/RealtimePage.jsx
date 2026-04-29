@@ -51,13 +51,31 @@ export default function RealtimePage() {
    SEND FRAME (AI - throttle 10 FPS)
   -------------------------------------------------- */
   const sendFrame = useCallback(async () => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || !videoRef.current) return;
 
     const canvas = canvasRef.current;
+    const video = videoRef.current;
 
+    // ถ้าวิดีโอยังไม่พร้อม → ห้ามส่งเฟรม
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.warn("Video not ready, skip frame");
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // blob อาจกลายเป็น null ต้องเช็ก
     const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.6)
+      canvas.toBlob(resolve, "image/jpeg", 0.8)
     );
+
+    if (!blob) {
+      console.warn("Blob is null, skip frame");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", blob, "frame.jpg");
@@ -68,13 +86,17 @@ export default function RealtimePage() {
         body: formData,
       });
 
-      const data = await res.json();
-
-      if (data?.detections) {
-        setDetections(data.detections);
+      if (!res.ok) {
+        console.error("AI server error", await res.text());
+        return;
       }
-    } catch {
-      setError(lang === "th" ? "Server error" : "Server error");
+
+      const data = await res.json();
+      if (data?.detections) setDetections(data.detections);
+
+    } catch (err) {
+      console.error(err);
+      setError(lang === "th" ? "เซิร์ฟเวอร์ผิดพลาด" : "Server error");
     }
   }, [API_URL, lang]);
 
@@ -112,23 +134,27 @@ export default function RealtimePage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    if (video && canvas) {
-      const ctx = canvas.getContext("2d");
+    // ถ้าวิดีโอไม่ ready → ห้ามวาด / ห้ามส่งเฟรม
+    if (!video || video.videoWidth === 0) {
+      loopRef.current = requestAnimationFrame(renderLoop);
+      return;
+    }
 
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
 
-      // 1. วาด video (30 FPS)
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-      // 2. วาด AI overlay
-      drawDetections(ctx, detections);
+    // วาดภาพจากกล้อง
+    ctx.drawImage(video, 0, 0);
 
-      // 3. ส่ง AI แบบ throttle (10 FPS)
-      if (timestamp - lastSendRef.current > INTERVAL) {
-        lastSendRef.current = timestamp;
-        sendFrame();
-      }
+    // วาด detection overlay
+    drawDetections(ctx, detections);
+
+    // Throttle AI ที่ 10 FPS
+    if (timestamp - lastSendRef.current > INTERVAL) {
+      lastSendRef.current = timestamp;
+      sendFrame();
     }
 
     loopRef.current = requestAnimationFrame(renderLoop);

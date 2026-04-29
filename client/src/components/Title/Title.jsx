@@ -27,6 +27,10 @@ export default function Header() {
       th: "ประวัติการใช้",
       en: "History",
     },
+    "/knowledge": {
+      th: "ความรู้เกี่ยวกับเซลล์",
+      en: "Cell Knowledge",
+    },
   };
 
   const getTitle = (path) => {

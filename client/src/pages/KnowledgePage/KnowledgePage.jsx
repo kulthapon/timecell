@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../../context/LangContext";
-import { CELL_TYPES } from "../../data/cellData";
-import "./CellInfoPage.css";
+import { CELL_TYPES } from "./CellData";
+import "./KnowledgePage.css";
 
-export default function CellInfoPage() {
+export default function KnowledgePage() {
   const { lang } = useLang();
   const navigate = useNavigate();
 

@@ -95,7 +95,7 @@ async def detect_realtime(file: UploadFile = File(...)):
     for box in result.boxes:
         detections.append({
             "label": result.names[int(box.cls)],
-            "conf":  float(box.conf),
+            "confidence":  float(box.conf),
             "bbox": {
                 "x":  round(float(box.xyxy[0][0])),
                 "y":  round(float(box.xyxy[0][1])),

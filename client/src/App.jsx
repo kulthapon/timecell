@@ -17,6 +17,8 @@ import ProfilePage       from "./pages/ProfilePage/ProfilePage";
 import RealtimePage      from "./pages/01_RealtimePage/RealtimePage";
 import ClassifyPage      from "./pages/02_ClassifyPage/ClassifyPage";
 import DetectPage        from "./pages/03_DetectPage/DetectPage";
+import KnowledgePage     from "./pages/KnowledgePage/KnowledgePage";
+import DetailPage   from "./pages/KnowledgePage/DetailPage";
 
 import "./App.css";
 
@@ -52,6 +54,8 @@ export default function App() {
                   <Route path="/detect"   element={<ProtectedRoute><DetectPage /></ProtectedRoute>} />
                   <Route path="/history"  element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                   <Route path="/profile"  element={<ProfilePage />} />
+                  <Route path="/knowledge" element={<KnowledgePage />} />
+                  <Route path="/knowledge/:id" element={<DetailPage />} />
                 </Routes>
 
               </div>

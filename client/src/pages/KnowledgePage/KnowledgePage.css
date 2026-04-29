@@ -1,0 +1,30 @@
+.cell-wrapper { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+.cell-hero { margin-bottom: 2.5rem; }
+.cell-hero h1 { font-size: 22px; font-weight: 700; color: var(--text, #1a1a1a); margin-bottom: 1rem; }
+.cell-hero p  { font-size: 14px; line-height: 1.7; color: var(--text-sub, #555); max-width: 720px; margin-bottom: 1.5rem; }
+
+.cell-bar-wrap   { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; margin-bottom: 6px; }
+.cell-bar-seg    { border-radius: 3px; }
+.cell-bar-labels { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.cell-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.cell-card {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cell-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+.cell-card-icon    { font-size: 36px; }
+.cell-card h3      { font-size: 15px; font-weight: 600; margin: 0; }
+.cell-card-summary { font-size: 12px; color: #555; line-height: 1.5; flex: 1; margin: 0; }
+.cell-card-more    { font-size: 12px; font-weight: 500; }
