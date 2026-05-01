@@ -1,6 +1,14 @@
 services:
   frontend:
+<<<<<<< Updated upstream
     build: ./client
+=======
+    build:
+      context: ./client
+      args:
+        - REACT_APP_API_URL=http://localhost:5000
+        - REACT_APP_WS_URL=ws://localhost:5000/api/ws
+>>>>>>> Stashed changes
     container_name: timecell_frontend
     ports:
       - "80:3000"
@@ -21,6 +29,13 @@ services:
       - DB_USER=root
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DB_NAME=TimeCell_db
+<<<<<<< Updated upstream
+=======
+      - CLIENT_URL=http://localhost:3000
+      - AI_URL=http://ai:8000
+      - AI_WS_URL=ws://ai:8000/ws
+
+>>>>>>> Stashed changes
     depends_on:
       - db
     restart: always
