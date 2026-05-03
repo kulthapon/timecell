@@ -18,7 +18,7 @@ import RealtimePage      from "./pages/01_RealtimePage/RealtimePage";
 import ClassifyPage      from "./pages/02_ClassifyPage/ClassifyPage";
 import DetectPage        from "./pages/03_DetectPage/DetectPage";
 import KnowledgePage     from "./pages/KnowledgePage/KnowledgePage";
-import DetailPage   from "./pages/KnowledgePage/DetailPage";
+import DetailPage        from "./pages/KnowledgePage/DetailPage";
 
 import "./App.css";
 

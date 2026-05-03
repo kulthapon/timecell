@@ -40,6 +40,13 @@ const NAV_ITEMS = [
     label: { th: "ประวัติการใช้", en: "History" },
     icon: <img src="/icon/history_icon.png" alt="history" className="nav-icon" />,
     authRequired: true,
+  },
+  {
+    key: "knowledge",
+    path: "/knowledge",
+    label: { th: "ความรู้เกี่ยวกับเซลล์", en: "Cell Knowledge" },
+    icon: <img src="/icon/knowledge_icon.png" alt="knowledge" className="nav-icon" />,
+    authRequired: false,
   }
 ];
 
