@@ -1,162 +1,198 @@
 export const CELL_TYPES = [
   {
-    id:       "neutrophil",
-    name:     { th: "นิวโทรฟิล",   en: "Neutrophil" },
-    color:    "#e3f2fd",
-    textColor:"#1565c0",
+    id: "neutrophil",
+    name: { th: "นิวโทรฟิล", en: "Neutrophil" },
+    pct: 60,
+    color: "#185FA5",
+    bg: "#E6F1FB",
+    size: "10–12 µm",
+    life: "6–8 hr",
     summary: {
-      th: "เซลล์เม็ดเลือดขาวที่พบมากที่สุด คิดเป็น 50–70% ของเม็ดเลือดขาวทั้งหมด ทำหน้าที่เป็นด่านแรกในการต่อสู้กับเชื้อแบคทีเรียและเชื้อรา",
-      en: "The most abundant white blood cell, comprising 50–70% of all WBCs. First responders against bacterial and fungal infections.",
+      th: "เซลล์ป้องกันด่านแรก กำจัดแบคทีเรียและเชื้อราด้วยการ phagocytosis",
+      en: "First-line defense; destroys bacteria and fungi via phagocytosis.",
     },
     detail: {
-      th: `นิวโทรฟิล (Neutrophil) เป็นเม็ดเลือดขาวชนิดที่พบมากที่สุดในร่างกาย มีอายุเฉลี่ยเพียง 6–8 ชั่วโมงในกระแสเลือด
-      
-**ลักษณะ:** นิวเคลียสแบ่งเป็นหลายพู (2–5 พู) เชื่อมกันด้วยเส้นบาง ๆ เม็ดสีม่วงอ่อนในไซโทพลาสซึม
-
-**หน้าที่:**
-- กลืนกินและทำลายแบคทีเรียด้วยกระบวนการ phagocytosis
-- ปล่อย neutrophil extracellular traps (NETs)
-- กระตุ้นการอักเสบเฉียบพลัน
-
-**ค่าปกติ:** 2,500–8,000 เซลล์/µL`,
-      en: `Neutrophils are the most abundant white blood cells, surviving only 6–8 hours in circulation.
-
-**Appearance:** Multi-lobed nucleus (2–5 lobes) connected by thin strands, pale granules in cytoplasm.
-
-**Functions:**
-- Phagocytosis of bacteria
-- Release of neutrophil extracellular traps (NETs)
-- Initiation of acute inflammation
-
-**Normal range:** 2,500–8,000 cells/µL`,
+      th: "นิวโทรฟิลเป็นเม็ดเลือดขาวที่พบมากที่สุด คิดเป็น 50–70% ของทั้งหมด มีอายุสั้นประมาณ 6–8 ชั่วโมงในกระแสเลือด เคลื่อนที่เข้าสู่บริเวณที่ติดเชื้อได้อย่างรวดเร็ว",
+      en: "Neutrophils are the most abundant WBCs (50–70%). They have a short lifespan of ~6–8 hours in blood and rapidly migrate to infection sites.",
     },
+    images: [
+      "1.jpg",    "2.jpg",    "3.jpg",   "4.jpg",   "5.jpg",   "6.jpg",   "7.jpg",   "8.jpg",   "9.jpg",  "10.jpg",
+      "11.jpg",   "12.jpg",  "13.jpg",  "14.jpg",  "15.jpg",  "16.jpg",  "17.jpg",  "18.jpg",  "19.jpg",  "20.jpg",
+      "21.jpg",   "22.jpg",  "23.jpg",  "24.jpg",  "25.jpg",  "26.jpg",  "27.jpg",  "28.jpg",  "29.jpg",  "30.jpg",
+      "31.jpg",   "32.jpg",  "33.jpg",  "34.jpg",  "35.jpg",  "36.jpg",  "37.jpg",  "38.jpg",  "39.jpg",  "40.jpg",
+      "41.jpg",   "42.jpg",  "43.jpg",  "44.jpg",  "45.jpg",  "46.jpg",  "47.jpg",  "48.jpg",  "49.jpg",  "50.jpg",
+      "51.jpg",   "52.jpg",  "53.jpg",  "54.jpg",  "55.jpg",  "56.jpg",  "57.jpg",  "58.jpg",  "59.jpg",  "60.jpg",
+      "61.jpg",   "62.jpg",  "63.jpg",  "64.jpg",  "65.jpg",  "66.jpg",  "67.jpg",  "68.jpg",  "69.jpg",  "70.jpg",
+      "71.jpg",   "72.jpg",  "73.jpg",  "74.jpg",  "75.jpg",  "76.jpg",  "77.jpg",  "78.jpg",  "79.jpg",  "80.jpg",
+      "81.jpg",   "82.jpg",  "83.jpg",  "84.jpg",  "85.jpg",  "86.jpg",  "87.jpg",  "88.jpg",  "89.jpg",  "90.jpg",
+      "91.jpg",   "92.jpg",  "93.jpg",  "94.jpg",  "95.jpg",  "96.jpg",  "97.jpg",  "98.jpg",  "99.jpg", "100.jpg",
+      "101.jpg", "102.jpg", "103.jpg", "104.jpg", "105.jpg", "106.jpg", "107.jpg", "108.jpg", "109.jpg", "110.jpg",
+      "111.jpg", "112.jpg", "113.jpg", "114.jpg", "115.jpg", "116.jpg", "117.jpg", "118.jpg", "119.jpg", "120.jpg",
+      "121.jpg", "122.jpg", "123.jpg", "124.jpg", "125.jpg", "126.jpg", "127.jpg", "128.jpg", "129.jpg", "130.jpg",
+      "131.jpg", "132.jpg", "133.jpg", "134.jpg", "135.jpg", "136.jpg", "137.jpg", "138.jpg", "139.jpg", "140.jpg",
+      "141.jpg", "142.jpg", "143.jpg", "144.jpg", "145.jpg", "146.jpg", "147.jpg", "148.jpg", "149.jpg", "150.jpg",
+      "151.jpg", "152.jpg", "153.jpg", "154.jpg", "155.jpg", "156.jpg", "157.jpg", "158.jpg", "159.jpg", "160.jpg",
+      "161.jpg", "162.jpg", "163.jpg", "164.jpg", "165.jpg", "166.jpg", "167.jpg", "168.jpg", "169.jpg", "170.jpg",
+      "171.jpg", "172.jpg", "173.jpg", "174.jpg", "175.jpg", "176.jpg", "177.jpg", "178.jpg", "179.jpg", "180.jpg",
+      "181.jpg", "182.jpg", "183.jpg", "184.jpg", "185.jpg", "186.jpg", "187.jpg", "188.jpg", "189.jpg", "190.jpg",
+      "191.jpg", "192.jpg", "193.jpg", "194.jpg", "195.jpg", "196.jpg", "197.jpg", "198.jpg", "199.jpg", "200.jpg",
+      "201.jpg", "202.jpg", "203.jpg", "204.jpg", "205.jpg", "206.jpg", "207.jpg", "208.jpg", "209.jpg", "210.jpg",
+      "211.jpg", "212.jpg", "213.jpg", "214.jpg", "215.jpg", "216.jpg", "217.jpg", "218.jpg", "219.jpg", "220.jpg",
+      "221.jpg", "222.jpg", "223.jpg", "224.jpg", "225.jpg", "226.jpg", "227.jpg", "228.jpg", "229.jpg", "230.jpg",
+      "231.jpg", "232.jpg", "233.jpg", "234.jpg", "235.jpg", "236.jpg", "237.jpg", "238.jpg", "239.jpg", "240.jpg",
+      "241.jpg", "242.jpg", "243.jpg", "244.jpg", "245.jpg", "246.jpg", "247.jpg", "248.jpg", "249.jpg", "250.jpg",
+    ],
   },
   {
-    id:    "lymphocyte",
-    name:  { th: "ลิมโฟไซต์",  en: "Lymphocyte" },
-    color: "#f3e5f5",
-    textColor: "#6a1b9a",
+    id: "lymphocyte",
+    name: { th: "ลิมโฟไซต์", en: "Lymphocyte" },
+    pct: 30,
+    color: "#3B6D11",
+    bg: "#EAF3DE",
+    size: "7–12 µm",
+    life: "days–years",
     summary: {
-      th: "เซลล์หลักของระบบภูมิคุ้มกันแบบจำเพาะ แบ่งเป็น T-cell, B-cell และ NK cell คิดเป็น 20–40% ของเม็ดเลือดขาวทั้งหมด",
-      en: "Key cells of adaptive immunity, divided into T-cells, B-cells, and NK cells. Comprise 20–40% of WBCs.",
+      th: "ผลิตแอนติบอดีและความจำภูมิคุ้มกัน แบ่งเป็น B cell, T cell และ NK cell",
+      en: "Produces antibodies and immune memory; includes B, T, and NK cells.",
     },
     detail: {
-      th: `ลิมโฟไซต์ (Lymphocyte) เป็นศูนย์กลางของระบบภูมิคุ้มกันแบบจำเพาะ
-
-**ลักษณะ:** นิวเคลียสกลมขนาดใหญ่ ไซโทพลาสซึมน้อย สีน้ำเงินเข้ม
-
-**ชนิดย่อย:**
-- **T-cell:** ควบคุมและทำลายเซลล์ติดเชื้อ
-- **B-cell:** สร้างแอนติบอดี
-- **NK cell:** ทำลายเซลล์มะเร็งและเซลล์ที่ติดไวรัส
-
-**ค่าปกติ:** 1,500–4,000 เซลล์/µL`,
-      en: `Lymphocytes are the cornerstone of adaptive immunity.
-
-**Appearance:** Large round nucleus, scant deep-blue cytoplasm.
-
-**Subtypes:**
-- **T-cells:** Kill infected cells and regulate immunity
-- **B-cells:** Produce antibodies
-- **NK cells:** Destroy cancer and virus-infected cells
-
-**Normal range:** 1,500–4,000 cells/µL`,
+      th: "ลิมโฟไซต์แบ่งเป็น B lymphocyte ซึ่งสร้างแอนติบอดี, T lymphocyte ที่ควบคุมและทำลายเซลล์ติดเชื้อ และ Natural Killer cell ที่กำจัดเซลล์มะเร็ง",
+      en: "Lymphocytes include B cells (antibody production), T cells (immune regulation and killing infected cells), and NK cells (cancer cell elimination).",
     },
+    images: [
+      "1.jpg",    "2.jpg",    "3.jpg",   "4.jpg",   "5.jpg",   "6.jpg",   "7.jpg",   "8.jpg",   "9.jpg",  "10.jpg",
+      "11.jpg",   "12.jpg",  "13.jpg",  "14.jpg",  "15.jpg",  "16.jpg",  "17.jpg",  "18.jpg",  "19.jpg",  "20.jpg",
+      "21.jpg",   "22.jpg",  "23.jpg",  "24.jpg",  "25.jpg",  "26.jpg",  "27.jpg",  "28.jpg",  "29.jpg",  "30.jpg",
+      "31.jpg",   "32.jpg",  "33.jpg",  "34.jpg",  "35.jpg",  "36.jpg",  "37.jpg",  "38.jpg",  "39.jpg",  "40.jpg",
+      "41.jpg",   "42.jpg",  "43.jpg",  "44.jpg",  "45.jpg",  "46.jpg",  "47.jpg",  "48.jpg",  "49.jpg",  "50.jpg",
+      "51.jpg",   "52.jpg",  "53.jpg",  "54.jpg",  "55.jpg",  "56.jpg",  "57.jpg",  "58.jpg",  "59.jpg",  "60.jpg",
+      "61.jpg",   "62.jpg",  "63.jpg",  "64.jpg",  "65.jpg",  "66.jpg",  "67.jpg",  "68.jpg",  "69.jpg",  "70.jpg",
+      "71.jpg",   "72.jpg",  "73.jpg",  "74.jpg",  "75.jpg",  "76.jpg",  "77.jpg",  "78.jpg",  "79.jpg",  "80.jpg",
+      "81.jpg",   "82.jpg",  "83.jpg",  "84.jpg",  "85.jpg",  "86.jpg",  "87.jpg",  "88.jpg",  "89.jpg",  "90.jpg",
+      "91.jpg",   "92.jpg",  "93.jpg",  "94.jpg",  "95.jpg",  "96.jpg",  "97.jpg",  "98.jpg",  "99.jpg", "100.jpg",
+      "101.jpg", "102.jpg", "103.jpg", "104.jpg", "105.jpg", "106.jpg", "107.jpg", "108.jpg", "109.jpg", "110.jpg",
+      "111.jpg", "112.jpg", "113.jpg", "114.jpg", "115.jpg", "116.jpg", "117.jpg", "118.jpg", "119.jpg", "120.jpg",
+      "121.jpg", "122.jpg", "123.jpg", "124.jpg", "125.jpg", "126.jpg", "127.jpg", "128.jpg", "129.jpg", "130.jpg",
+      "131.jpg", "132.jpg", "133.jpg", "134.jpg", "135.jpg", "136.jpg", "137.jpg", "138.jpg", "139.jpg", "140.jpg",
+      "141.jpg", "142.jpg", "143.jpg", "144.jpg", "145.jpg", "146.jpg", "147.jpg", "148.jpg", "149.jpg", "150.jpg",
+      "151.jpg", "152.jpg", "153.jpg", "154.jpg", "155.jpg", "156.jpg", "157.jpg", "158.jpg", "159.jpg", "160.jpg",
+      "161.jpg", "162.jpg", "163.jpg", "164.jpg", "165.jpg", "166.jpg", "167.jpg", "168.jpg", "169.jpg", "170.jpg",
+      "171.jpg", "172.jpg", "173.jpg", "174.jpg", "175.jpg", "176.jpg", "177.jpg", "178.jpg", "179.jpg", "180.jpg",
+      "181.jpg", "182.jpg", "183.jpg", "184.jpg", "185.jpg", "186.jpg", "187.jpg", "188.jpg", "189.jpg", "190.jpg",
+      "191.jpg", "192.jpg", "193.jpg", "194.jpg", "195.jpg", "196.jpg", "197.jpg", "198.jpg", "199.jpg", "200.jpg",
+      "201.jpg", "202.jpg", "203.jpg", "204.jpg", "205.jpg", "206.jpg", "207.jpg", "208.jpg", "209.jpg", "210.jpg",
+      "211.jpg", "212.jpg", "213.jpg", "214.jpg", "215.jpg", "216.jpg", "217.jpg", "218.jpg", "219.jpg", "220.jpg",
+      "221.jpg", "222.jpg", "223.jpg", "224.jpg", "225.jpg", "226.jpg", "227.jpg", "228.jpg", "229.jpg", "230.jpg",
+      "231.jpg", "232.jpg", "233.jpg", "234.jpg", "235.jpg", "236.jpg", "237.jpg", "238.jpg", "239.jpg", "240.jpg",
+      "241.jpg", "242.jpg", "243.jpg", "244.jpg", "245.jpg", "246.jpg", "247.jpg", "248.jpg", "249.jpg", "250.jpg",
+    ],
   },
   {
-    id:    "monocyte",
-    name:  { th: "โมโนไซต์",   en: "Monocyte" },
-    color: "#fff8e1",
-    textColor: "#f57f17",
+    id: "monocyte",
+    name: { th: "โมโนไซต์", en: "Monocyte" },
+    pct: 6,
+    color: "#BA7517",
+    bg: "#FAEEDA",
+    size: "14–20 µm",
+    life: "1–3 days",
     summary: {
-      th: "เซลล์เม็ดเลือดขาวที่มีขนาดใหญ่ที่สุด เมื่อออกจากกระแสเลือดจะเปลี่ยนเป็นแมโครฟาจ คิดเป็น 2–8% ของเม็ดเลือดขาวทั้งหมด",
-      en: "The largest WBC. Transforms into macrophages upon leaving the bloodstream. Comprises 2–8% of WBCs.",
+      th: "บรรพบุรุษของ macrophage เคลื่อนที่สู่เนื้อเยื่อและทำลายเชื้อโรคขนาดใหญ่",
+      en: "Precursor to macrophages; migrates to tissues to engulf large pathogens.",
     },
     detail: {
-      th: `โมโนไซต์ (Monocyte) เป็นเม็ดเลือดขาวที่มีขนาดใหญ่ที่สุดในกระแสเลือด
-
-**ลักษณะ:** นิวเคลียสรูปไต หรือรูปเกือกม้า ไซโทพลาสซึมสีเทาอมฟ้า มีจำนวนแวคิวโอล
-
-**หน้าที่:**
-- กลืนกินเซลล์ตาย เซลล์แบคทีเรีย และเศษซาก
-- นำเสนอแอนติเจนแก่ T-cell
-- เปลี่ยนเป็นแมโครฟาจในเนื้อเยื่อ
-
-**ค่าปกติ:** 200–800 เซลล์/µL`,
-      en: `Monocytes are the largest circulating white blood cells.
-
-**Appearance:** Kidney or horseshoe-shaped nucleus, gray-blue cytoplasm with vacuoles.
-
-**Functions:**
-- Phagocytosis of dead cells and debris
-- Antigen presentation to T-cells
-- Differentiation into macrophages in tissues
-
-**Normal range:** 200–800 cells/µL`,
+      th: "โมโนไซต์เมื่อออกจากกระแสเลือดจะเปลี่ยนเป็น macrophage ทำหน้าที่กำจัดซากเซลล์ เซลล์ที่ตายแล้ว และเชื้อโรคขนาดใหญ่",
+      en: "Monocytes differentiate into macrophages after leaving blood, clearing dead cells and large pathogens.",
     },
+    images: [
+      "1.jpg",    "2.jpg",    "3.jpg",   "4.jpg",   "5.jpg",   "6.jpg",   "7.jpg",   "8.jpg",   "9.jpg",  "10.jpg",
+      "11.jpg",   "12.jpg",  "13.jpg",  "14.jpg",  "15.jpg",  "16.jpg",  "17.jpg",  "18.jpg",  "19.jpg",  "20.jpg",
+      "21.jpg",   "22.jpg",  "23.jpg",  "24.jpg",  "25.jpg",  "26.jpg",  "27.jpg",  "28.jpg",  "29.jpg",  "30.jpg",
+      "31.jpg",   "32.jpg",  "33.jpg",  "34.jpg",  "35.jpg",  "36.jpg",  "37.jpg",  "38.jpg",  "39.jpg",  "40.jpg",
+      "41.jpg",   "42.jpg",  "43.jpg",  "44.jpg",  "45.jpg",  "46.jpg",  "47.jpg",  "48.jpg",  "49.jpg",  "50.jpg",
+      "51.jpg",   "52.jpg",  "53.jpg",  "54.jpg",  "55.jpg",  "56.jpg",  "57.jpg",  "58.jpg",  "59.jpg",  "60.jpg",
+      "61.jpg",   "62.jpg",  "63.jpg",  "64.jpg",  "65.jpg",  "66.jpg",  "67.jpg",  "68.jpg",  "69.jpg",  "70.jpg",
+      "71.jpg",   "72.jpg",  "73.jpg",  "74.jpg",  "75.jpg",  "76.jpg",  "77.jpg",  "78.jpg",  "79.jpg",  "80.jpg",
+      "81.jpg",   "82.jpg",  "83.jpg",  "84.jpg",  "85.jpg",  "86.jpg",  "87.jpg",  "88.jpg",  "89.jpg",  "90.jpg",
+      "91.jpg",   "92.jpg",  "93.jpg",  "94.jpg",  "95.jpg",  "96.jpg",  "97.jpg",  "98.jpg",  "99.jpg", "100.jpg",
+      "101.jpg", "102.jpg", "103.jpg", "104.jpg", "105.jpg", "106.jpg", "107.jpg", "108.jpg", "109.jpg", "110.jpg",
+      "111.jpg", "112.jpg", "113.jpg", "114.jpg", "115.jpg", "116.jpg", "117.jpg", "118.jpg", "119.jpg", "120.jpg",
+      "121.jpg", "122.jpg", "123.jpg", "124.jpg", "125.jpg", "126.jpg", "127.jpg", "128.jpg", "129.jpg", "130.jpg",
+      "131.jpg", "132.jpg", "133.jpg", "134.jpg", "135.jpg", "136.jpg", "137.jpg", "138.jpg", "139.jpg", "140.jpg",
+      "141.jpg", "142.jpg", "143.jpg", "144.jpg", "145.jpg", "146.jpg", "147.jpg", "148.jpg", "149.jpg", "150.jpg",
+      "151.jpg", "152.jpg", "153.jpg", "154.jpg", "155.jpg", "156.jpg", "157.jpg", "158.jpg", "159.jpg", "160.jpg",
+      "161.jpg", "162.jpg", "163.jpg", "164.jpg", "165.jpg", "166.jpg", "167.jpg", "168.jpg", "169.jpg", "170.jpg",
+      "171.jpg", "172.jpg", "173.jpg", "174.jpg", "175.jpg", "176.jpg", "177.jpg", "178.jpg", "179.jpg", "180.jpg",
+      "181.jpg", "182.jpg", "183.jpg", "184.jpg", "185.jpg", "186.jpg", "187.jpg", "188.jpg", "189.jpg", "190.jpg",
+      "191.jpg", "192.jpg", "193.jpg", "194.jpg", "195.jpg", "196.jpg", "197.jpg", "198.jpg", "199.jpg", "200.jpg",
+      "201.jpg", "202.jpg", "203.jpg", "204.jpg", "205.jpg", "206.jpg", "207.jpg", "208.jpg", "209.jpg", "210.jpg",
+      "211.jpg", "212.jpg", "213.jpg", "214.jpg", "215.jpg", "216.jpg", "217.jpg", "218.jpg", "219.jpg", "220.jpg",
+      "221.jpg", "222.jpg", "223.jpg", "224.jpg", "225.jpg", "226.jpg", "227.jpg", "228.jpg", "229.jpg", "230.jpg",
+      "231.jpg", "232.jpg", "233.jpg", "234.jpg", "235.jpg", "236.jpg", "237.jpg", "238.jpg", "239.jpg", "240.jpg",
+      "241.jpg", "242.jpg", "243.jpg", "244.jpg", "245.jpg", "246.jpg", "247.jpg", "248.jpg", "249.jpg", "250.jpg",
+    ],
   },
   {
-    id:    "eosinophil",
-    name:  { th: "อีโอซิโนฟิล", en: "Eosinophil" },
-    color: "#fce4ec",
-    textColor: "#b71c1c",
+    id: "eosinophil",
+    name: { th: "อีโอซิโนฟิล", en: "Eosinophil" },
+    pct: 3,
+    color: "#993C1D",
+    bg: "#FAECE7",
+    size: "12–15 µm",
+    life: "8–12 days (tissue)",
     summary: {
-      th: "เซลล์ที่ตอบสนองต่อการแพ้และปรสิต มีเม็ดสีส้มแดงขนาดใหญ่เด่นชัด คิดเป็น 1–4% ของเม็ดเลือดขาวทั้งหมด",
-      en: "Responds to allergic reactions and parasitic infections. Distinctive large orange-red granules. Comprises 1–4% of WBCs.",
+      th: "ต้านปรสิตและมีบทบาทในการตอบสนองภูมิแพ้และหืด",
+      en: "Combats parasites and plays a role in allergic and asthmatic responses.",
     },
     detail: {
-      th: `อีโอซิโนฟิล (Eosinophil) ทำหน้าที่หลักในการต่อสู้กับปรสิตและควบคุมการแพ้
-
-**ลักษณะ:** นิวเคลียส 2 พู เม็ดสีส้มแดงขนาดใหญ่เห็นชัดเจน
-
-**หน้าที่:**
-- ต่อต้านปรสิตขนาดใหญ่
-- ควบคุมการตอบสนองภูมิแพ้
-- ปล่อยสารพิษทำลายปรสิต
-
-**ค่าปกติ:** 100–400 เซลล์/µL`,
-      en: `Eosinophils primarily combat parasitic infections and regulate allergic responses.
-
-**Appearance:** Bi-lobed nucleus, prominent large orange-red granules.
-
-**Functions:**
-- Combat large parasites
-- Regulate allergic responses
-- Release toxic proteins against parasites
-
-**Normal range:** 100–400 cells/µL`,
+      th: "อีโอซิโนฟิลสูงขึ้นเมื่อมีการติดเชื้อปรสิต เช่น พยาธิ หรือในภาวะภูมิแพ้ มีแกรนูลที่ย้อมติดสีกรดได้ดี",
+      en: "Eosinophils increase with parasitic infections and allergic conditions. Their granules stain bright with acidic dyes.",
     },
+    images: [
+      "1.jpg",    "2.jpg",    "3.jpg",   "4.jpg",   "5.jpg",   "6.jpg",   "7.jpg",   "8.jpg",   "9.jpg",  "10.jpg",
+      "11.jpg",   "12.jpg",  "13.jpg",  "14.jpg",  "15.jpg",  "16.jpg",  "17.jpg",  "18.jpg",  "19.jpg",  "20.jpg",
+      "21.jpg",   "22.jpg",  "23.jpg",  "24.jpg",  "25.jpg",  "26.jpg",  "27.jpg",  "28.jpg",  "29.jpg",  "30.jpg",
+      "31.jpg",   "32.jpg",  "33.jpg",  "34.jpg",  "35.jpg",  "36.jpg",  "37.jpg",  "38.jpg",  "39.jpg",  "40.jpg",
+      "41.jpg",   "42.jpg",  "43.jpg",  "44.jpg",  "45.jpg",  "46.jpg",  "47.jpg",  "48.jpg",  "49.jpg",  "50.jpg",
+      "51.jpg",   "52.jpg",  "53.jpg",  "54.jpg",  "55.jpg",  "56.jpg",  "57.jpg",  "58.jpg",  "59.jpg",  "60.jpg",
+      "61.jpg",   "62.jpg",  "63.jpg",  "64.jpg",  "65.jpg",  "66.jpg",  "67.jpg",  "68.jpg",  "69.jpg",  "70.jpg",
+      "71.jpg",   "72.jpg",  "73.jpg",  "74.jpg",  "75.jpg",  "76.jpg",  "77.jpg",  "78.jpg",  "79.jpg",  "80.jpg",
+      "81.jpg",   "82.jpg",  "83.jpg",  "84.jpg",  "85.jpg",  "86.jpg",  "87.jpg",  "88.jpg",  "89.jpg",  "90.jpg",
+      "91.jpg",   "92.jpg",  "93.jpg",  "94.jpg",  "95.jpg",  "96.jpg",  "97.jpg",  "98.jpg",  "99.jpg", "100.jpg",
+      "101.jpg", "102.jpg", "103.jpg", "104.jpg", "105.jpg", "106.jpg", "107.jpg", "108.jpg", "109.jpg", "110.jpg",
+      "111.jpg", "112.jpg", "113.jpg", "114.jpg", "115.jpg", "116.jpg", "117.jpg", "118.jpg", "119.jpg", "120.jpg",
+      "121.jpg", "122.jpg", "123.jpg", "124.jpg", "125.jpg", "126.jpg", "127.jpg", "128.jpg", "129.jpg", "130.jpg",
+      "131.jpg", "132.jpg", "133.jpg", "134.jpg", "135.jpg", "136.jpg", "137.jpg", "138.jpg", "139.jpg", "140.jpg",
+      "141.jpg", "142.jpg", "143.jpg", "144.jpg", "145.jpg", "146.jpg", "147.jpg", "148.jpg", "149.jpg", "150.jpg",
+      "151.jpg", "152.jpg", "153.jpg", "154.jpg", "155.jpg", "156.jpg", "157.jpg", "158.jpg", "159.jpg", "160.jpg",
+      "161.jpg", "162.jpg", "163.jpg", "164.jpg", "165.jpg", "166.jpg", "167.jpg", "168.jpg", "169.jpg", "170.jpg",
+      "171.jpg", "172.jpg", "173.jpg", "174.jpg", "175.jpg", "176.jpg", "177.jpg", "178.jpg", "179.jpg", "180.jpg",
+      "181.jpg", "182.jpg", "183.jpg", "184.jpg", "185.jpg", "186.jpg", "187.jpg", "188.jpg", "189.jpg", "190.jpg",
+      "191.jpg", "192.jpg", "193.jpg", "194.jpg", "195.jpg", "196.jpg", "197.jpg", "198.jpg", "199.jpg", "200.jpg",
+      "201.jpg", "202.jpg", "203.jpg", "204.jpg", "205.jpg", "206.jpg", "207.jpg", "208.jpg", "209.jpg", "210.jpg",
+      "211.jpg", "212.jpg", "213.jpg", "214.jpg", "215.jpg", "216.jpg", "217.jpg", "218.jpg", "219.jpg", "220.jpg",
+      "221.jpg", "222.jpg", "223.jpg", "224.jpg", "225.jpg", "226.jpg", "227.jpg", "228.jpg", "229.jpg", "230.jpg",
+      "231.jpg", "232.jpg", "233.jpg", "234.jpg", "235.jpg", "236.jpg", "237.jpg", "238.jpg", "239.jpg", "240.jpg",
+      "241.jpg", "242.jpg", "243.jpg", "244.jpg", "245.jpg", "246.jpg", "247.jpg", "248.jpg", "249.jpg", "250.jpg",
+    ],
   },
   {
-    id:    "basophil",
-    name:  { th: "เบโซฟิล",    en: "Basophil" },
-    color: "#e8eaf6",
-    textColor: "#283593",
+    id: "basophil",
+    name: { th: "เบโซฟิล", en: "Basophil" },
+    pct: 1,
+    color: "#534AB7",
+    bg: "#EEEDFE",
+    size: "10–15 µm",
+    life: "few days",
     summary: {
-      th: "เซลล์เม็ดเลือดขาวที่พบน้อยที่สุด มีเม็ดสีม่วงเข้มขนาดใหญ่ปกคลุม มีบทบาทในการแพ้และการอักเสบ คิดเป็น <1% ของเม็ดเลือดขาว",
-      en: "The rarest WBC, covered with large dark-purple granules. Involved in allergic and inflammatory responses. <1% of WBCs.",
+      th: "ปล่อย histamine ในการตอบสนองภูมิแพ้ มีจำนวนน้อยที่สุดในกระแสเลือด",
+      en: "Releases histamine in allergic responses; the rarest WBC in circulation.",
     },
     detail: {
-      th: `เบโซฟิล (Basophil) เป็นเม็ดเลือดขาวที่พบน้อยที่สุดในร่างกาย
-
-**ลักษณะ:** นิวเคลียส S-shape หรือ 2 พู ปกคลุมด้วยเม็ดสีม่วงเข้มขนาดใหญ่
-
-**หน้าที่:**
-- ปล่อยฮีสตามีนในปฏิกิริยาแพ้
-- ปล่อยเฮปาริน (ป้องกันการแข็งตัวของเลือด)
-- กระตุ้นการตอบสนองภูมิแพ้ชนิด IgE
-
-**ค่าปกติ:** 0–100 เซลล์/µL`,
-      en: `Basophils are the rarest white blood cells in circulation.
-
-**Appearance:** S-shaped or bi-lobed nucleus covered by large dark-purple granules.
-
-**Functions:**
-- Release histamine in allergic reactions
-- Release heparin (anticoagulant)
-- Mediate IgE-dependent allergic responses
-
-**Normal range:** 0–100 cells/µL`,
+      th: "เบโซฟิลมีจำนวนน้อยมาก (0.5–1%) ปล่อยสาร histamine และ heparin เมื่อถูกกระตุ้น มีบทบาทในปฏิกิริยา anaphylaxis",
+      en: "Basophils are the rarest WBC (0.5–1%). They release histamine and heparin when activated, playing a role in anaphylaxis.",
     },
+    images: [
+      "1.jpg",    "2.jpg",    "3.jpg",   "4.jpg",   "5.jpg",   "6.jpg",   "7.jpg",   "8.jpg",   "9.jpg",  "10.jpg",
+    ],
   },
 ];

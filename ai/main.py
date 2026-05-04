@@ -1,228 +1,45 @@
-from fastapi import FastAPI, File, UploadFile, Form, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from ultralytics import YOLO
-from PIL import Image, ImageEnhance
-import io, base64, os, json
+"""
+main.py — Application entry point.
 
-app = FastAPI()
+Run:
+    uvicorn main:app --reload --port 8000
+"""
+import logging
+from datetime import datetime
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+from config import ALLOWED_ORIGINS, STATIC_DIR
+from ml.loader import INPUT_SIZE, classification_model, classification_labels, yolo_model
+from routers import classify, detect, history, realtime
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
+
+app = FastAPI(
+    title="Cell Detection API",
+    version="2.0.0",
+    description="YOLO detection + TF/Keras classification pipeline.",
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ← เปิดกว้างไว้ก่อนระหว่าง dev
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ── YOLO ──────────────────────────────────────
-YOLO_MODEL_PATH = os.getenv("YOLO_MODEL_PATH", "models/best.pt")
-yolo_model = None
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-if YOLO_MODEL_PATH and os.path.exists(YOLO_MODEL_PATH):  # ← เช็ค None ก่อน
-    yolo_model = YOLO(YOLO_MODEL_PATH)
-    print(f"YOLO loaded: {YOLO_MODEL_PATH}")
-else:
-    print(f"YOLO model not found: {YOLO_MODEL_PATH}")
+app.include_router(realtime.router)
+app.include_router(classify.router)
+app.include_router(detect.router)
+app.include_router(history.router)
 
-# ── Classification ─────────────────────────────
-CLASSIFICATION_MODEL_PATH  = os.getenv("CLASSIFICATION_MODEL_PATH")
-CLASSIFICATION_LABELS_PATH = os.getenv("CLASSIFICATION_LABELS_PATH")
 
-classification_model  = None
-classification_labels = []
-INPUT_SIZE = (224, 224)
-
-try:
-    import tensorflow as tf
-    import numpy as np
-
-    if CLASSIFICATION_MODEL_PATH and os.path.exists(CLASSIFICATION_MODEL_PATH):
-        classification_model = tf.keras.models.load_model(CLASSIFICATION_MODEL_PATH)
-        shape      = classification_model.input_shape
-        INPUT_SIZE = (shape[1], shape[2])
-        print(f"Classification loaded, input: {INPUT_SIZE}")
-    else:
-        print(f"Classification model not found: {CLASSIFICATION_MODEL_PATH}")
-
-    if CLASSIFICATION_LABELS_PATH and os.path.exists(CLASSIFICATION_LABELS_PATH):
-        with open(CLASSIFICATION_LABELS_PATH, "r", encoding="utf-8") as f:
-            classification_labels = json.load(f)
-        print(f"Labels: {len(classification_labels)} classes")
-
-except ImportError:
-    print("TensorFlow not installed")
-
-# ── helpers ───────────────────────────────────
-def to_b64(image: Image.Image, quality=85) -> str:
-    buf = io.BytesIO()
-    image.save(buf, format="JPEG", quality=quality)
-    return base64.b64encode(buf.getvalue()).decode("utf-8")
-
-def apply_adjustments(image, brightness=1.0, contrast=1.0, color=1.0):
-    image = ImageEnhance.Brightness(image).enhance(brightness)
-    image = ImageEnhance.Contrast(image).enhance(contrast)
-    image = ImageEnhance.Color(image).enhance(color)
-    return image
-
-def run_classification(image: Image.Image) -> list:
-    if classification_model is None:
-        return []
-    import numpy as np
-    img  = image.resize(INPUT_SIZE).convert("RGB")
-    arr  = tf.keras.preprocessing.image.img_to_array(img) / 255.0
-    arr  = np.expand_dims(arr, axis=0)
-    pred = classification_model.predict(arr, verbose=0)[0]
-    return [
-        {
-            "label":      classification_labels[i] if i < len(classification_labels) else str(i),
-            "confidence": round(float(pred[i]) * 100, 2),
-        }
-        for i in pred.argsort()[::-1][:5]
-    ]
-
-def process_single_image(image: Image.Image, filename: str) -> dict:
-    """YOLO detect + crop สำหรับภาพเดียว"""
-    w, h      = image.size
-    results   = yolo_model(image, verbose=False)
-    result    = results[0]
-    annotated = Image.fromarray(result.plot())
-
-    crops_by_class = {}
-    detections     = []
-
-    for box in result.boxes:
-        x,  y  = round(float(box.xyxy[0][0])), round(float(box.xyxy[0][1]))
-        x2, y2 = round(float(box.xyxy[0][2])), round(float(box.xyxy[0][3]))
-        label  = result.names[int(box.cls)]
-        conf   = round(float(box.conf), 2)
-        crop   = image.crop((max(0,x), max(0,y), min(w,x2), min(h,y2)))
-
-        detections.append({
-            "label":      label,
-            "confidence": conf,
-            "bbox":       {"x": x, "y": y, "x2": x2, "y2": y2},
-            "crop_image": to_b64(crop),
-        })
-        crops_by_class.setdefault(label, []).append(to_b64(crop))
-
-    return {
-        "filename":       filename,
-        "image":          to_b64(annotated),   # ← ชื่อ image (ตรงกับ frontend)
-        "annotated":      to_b64(annotated),   # ← ไว้ backward compat
-        "detections":     detections,
-        "crops_by_class": crops_by_class,
-        "class_summary":  {cls: len(imgs) for cls, imgs in crops_by_class.items()},
-        "count":          len(detections),
-    }
-
-# ════════════════════════════════════════════════
-# 1. WebSocket realtime
-# ════════════════════════════════════════════════
-@app.websocket("/ws")
-async def ws_detect(ws: WebSocket):
-    await ws.accept()
-    print("WebSocket connected")
-    try:
-        while True:
-            data = await ws.receive_bytes()
-
-            if yolo_model is None:
-                await ws.send_json({"error": "YOLO model not loaded"})
-                continue
-
-            image    = Image.open(io.BytesIO(data)).convert("RGB")
-            results  = yolo_model(image, verbose=False)
-            result   = results[0]
-            annotated = Image.fromarray(result.plot())
-
-            detections = [
-                {
-                    "label":      result.names[int(box.cls)],
-                    "confidence": round(float(box.conf), 2),
-                    "bbox": {
-                        "x":  round(float(box.xyxy[0][0])),
-                        "y":  round(float(box.xyxy[0][1])),
-                        "x2": round(float(box.xyxy[0][2])),
-                        "y2": round(float(box.xyxy[0][3])),
-                    },
-                }
-                for box in result.boxes
-            ]
-
-            await ws.send_json({
-                "image":      to_b64(annotated),
-                "detections": detections,
-                "count":      len(detections),
-            })
-
-    except WebSocketDisconnect:
-        print("WebSocket disconnected")
-    except Exception as e:
-        print(f"WebSocket error: {e}")
-
-# ════════════════════════════════════════════════
-# 2. Classification + crop + adjust
-# ════════════════════════════════════════════════
-@app.post("/classify")
-async def classify(
-    file:       UploadFile = File(...),
-    brightness: float = Form(1.0),
-    contrast:   float = Form(1.0),
-    color:      float = Form(1.0),
-    crop_x:     int   = Form(0),
-    crop_y:     int   = Form(0),
-    crop_w:     int   = Form(0),
-    crop_h:     int   = Form(0),
-):
-    if classification_model is None:
-        return JSONResponse({"error": "Classification model not loaded"}, status_code=503)
-
-    contents = await file.read()
-    image    = Image.open(io.BytesIO(contents)).convert("RGB")
-    iw, ih   = image.size
-
-    if crop_w > 0 and crop_h > 0:
-        image = image.crop((
-            max(0, crop_x), max(0, crop_y),
-            min(crop_x + crop_w, iw), min(crop_y + crop_h, ih)
-        ))
-
-    image   = apply_adjustments(image, brightness, contrast, color)
-    results = run_classification(image)
-
-    return JSONResponse({
-        "preview": to_b64(image),
-        "results": results,
-        "top":     results[0] if results else None,
-    })
-
-# ════════════════════════════════════════════════
-# 3. Detect — รับทั้ง 1 ไฟล์ และหลายไฟล์
-# ════════════════════════════════════════════════
-@app.post("/detect")
-async def detect(files: list[UploadFile] = File(...)):
-    if yolo_model is None:
-        return JSONResponse({"error": "YOLO model not loaded"}, status_code=503)
-
-    all_results = []
-    for file in files:
-        contents = await file.read()
-        image    = Image.open(io.BytesIO(contents)).convert("RGB")
-        result   = process_single_image(image, file.filename)
-        all_results.append(result)
-
-    # ถ้าส่งมาไฟล์เดียว — ส่งกลับเป็น object เดียว (ตรงกับ realtime frontend)
-    if len(all_results) == 1:
-        return JSONResponse(all_results[0])
-
-    # หลายไฟล์ — ส่งกลับเป็น array
-    return JSONResponse({"results": all_results})
-
-# ════════════════════════════════════════════════
-# Health
-# ════════════════════════════════════════════════
-@app.get("/health")
+@app.get("/health", tags=["Ops"])
 def health():
     return {
         "status":         "ok",
@@ -230,4 +47,5 @@ def health():
         "classification": classification_model is not None,
         "classes":        len(classification_labels),
         "input_size":     INPUT_SIZE,
+        "time":           datetime.utcnow().isoformat(),
     }

@@ -24,7 +24,7 @@ export default function Header() {
       en: "Cell Counting",
     },
     "/history": {
-      th: "ประวัติการใช้",
+      th: "ประวัติการใช้งาน",
       en: "History",
     },
     "/knowledge": {
@@ -34,7 +34,13 @@ export default function Header() {
   };
 
   const getTitle = (path) => {
-    return titles[path]?.[lang] || (lang === "th" ? "Time Cell" : "Time Cell");
+    if (titles[path]) {
+      return titles[path][lang];
+    }
+    if (path.startsWith("/knowledge/")) {
+      return lang === "th" ? "รายละเอียดเซลล์" : "Cell Detail Information";
+    }
+    return "Time Cell";
   };
 
   return (

@@ -2,6 +2,8 @@ FROM timecell-ai-base
 
 WORKDIR /app
 
+ENV PYTHONPATH="/app"
+
 RUN apt-get update && apt-get install -y curl
 
 COPY . .

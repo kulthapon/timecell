@@ -4,9 +4,9 @@ import "./RealtimePage.css";
 
 export const WS_URL = process.env.REACT_APP_WS_URL;
 
-const TARGET_FPS = 10;
+const TARGET_FPS = 20;
 const FRAME_MS = 1000 / TARGET_FPS;
-const MAX_INFLIGHT = 2;
+const MAX_INFLIGHT = 3;
 
 export default function RealtimePage() {
   const { lang } = useLang();
@@ -31,7 +31,7 @@ export default function RealtimePage() {
   const [error, setError] = useState("");
   const [savedImages, setSavedImages] = useState([]);
 
-  /* ── FPS UI ── */
+  /* ── 1. FPS Monitor ── */
   useEffect(() => {
     const t = setInterval(() => {
       setFps(fpsRef.current);
@@ -39,45 +39,53 @@ export default function RealtimePage() {
       fpsRef.current = 0;
       aiFpsRef.current = 0;
     }, 1000);
-
     return () => clearInterval(t);
   }, []);
 
-  /* ── draw overlay ── */
+  /* ── 2. Draw Overlay ── */
   const drawOverlay = useCallback((dets) => {
     const overlay = overlayRef.current;
     const video = videoRef.current;
-    if (!overlay || !video) return;
+    if (!overlay || !video || video.videoWidth === 0) return;
 
-    overlay.width = video.videoWidth;
-    overlay.height = video.videoHeight;
+    if (overlay.width !== video.videoWidth) {
+      overlay.width = video.videoWidth;
+      overlay.height = video.videoHeight;
+    }
 
     const ctx = overlay.getContext("2d");
     ctx.clearRect(0, 0, overlay.width, overlay.height);
 
+    const scaleX = video.videoWidth / 640;
+    const scaleY = video.videoHeight / 360;
+
     dets.forEach(({ label, confidence, bbox }) => {
-      const bw = bbox.x2 - bbox.x;
-      const bh = bbox.y2 - bbox.y;
+      const x = bbox.x * scaleX;
+      const y = bbox.y * scaleY;
+      const x2 = bbox.x2 * scaleX;
+      const y2 = bbox.y2 * scaleY;
+      const bw = x2 - x;
+      const bh = y2 - y;
 
       ctx.strokeStyle = "#00e676";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bbox.x, bbox.y, bw, bh);
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, bw, bh);
 
       const text = `${label} ${Math.round(confidence * 100)}%`;
-      ctx.font = "bold 13px sans-serif";
+      ctx.font = "bold 16px sans-serif";
       const tw = ctx.measureText(text).width;
 
       ctx.fillStyle = "#00e676";
-      ctx.fillRect(bbox.x, bbox.y - 20, tw + 10, 20);
+      ctx.fillRect(x, y - 25, tw + 10, 25);
 
       ctx.fillStyle = "#000";
-      ctx.fillText(text, bbox.x + 5, bbox.y - 5);
+      ctx.fillText(text, x + 5, y - 7);
     });
   }, []);
 
-  /* ── WebSocket ── */
+  /* ── 3. WebSocket Connection ── */
   const connectWS = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current) return;
 
     const ws = new WebSocket(WS_URL);
     ws.binaryType = "arraybuffer";
@@ -85,25 +93,24 @@ export default function RealtimePage() {
     ws.onopen = () => {
       setConnected(true);
       setError("");
+      console.log("WS Connected");
     };
 
     ws.onmessage = (e) => {
       inflightRef.current = Math.max(0, inflightRef.current - 1);
-
       try {
         const data = JSON.parse(e.data);
-
         if (data.error) {
           setError(data.error);
           return;
         }
-
         const dets = data.detections ?? [];
         setDetections(dets);
         drawOverlay(dets);
-
         aiFpsRef.current += 1;
-      } catch {}
+      } catch (err) {
+        console.error("Parse error:", err);
+      }
     };
 
     ws.onerror = () => {
@@ -112,106 +119,117 @@ export default function RealtimePage() {
 
     ws.onclose = () => {
       setConnected(false);
+      wsRef.current = null;
       inflightRef.current = 0;
+      console.log("WS Closed");
     };
 
     wsRef.current = ws;
   }, [drawOverlay, lang]);
 
-  /* ── send loop ── */
+  /* ── 4. Main Send Loop ── */
   const sendLoop = useCallback(() => {
+    if (!streaming) return;
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ws = wsRef.current;
-
-    if (!video || !canvas || !ws) {
-      rafRef.current = requestAnimationFrame(sendLoop);
-      return;
-    }
-
-    if (video.readyState < 2) {
-      rafRef.current = requestAnimationFrame(sendLoop);
-      return;
-    }
-
-    if (ws.readyState !== WebSocket.OPEN) {
-      rafRef.current = requestAnimationFrame(sendLoop);
-      return;
-    }
-
     const now = performance.now();
 
-    if (now - lastSendRef.current >= FRAME_MS) {
-
+    if (
+      video && video.readyState >= 2 &&
+      ws && ws.readyState === WebSocket.OPEN &&
+      now - lastSendRef.current >= FRAME_MS &&
+      inflightRef.current < MAX_INFLIGHT
+    ) {
       const ctx = canvas.getContext("2d");
-      canvas.width = 640;
-      canvas.height = 360;
+      if (canvas.width !== 640) {
+        canvas.width = 640;
+        canvas.height = 360;
+      }
 
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob((blob) => {
-        if (!blob) return;
-
-        blob.arrayBuffer().then((buf) => {
-          wsRef.current.send(buf);
-
-          console.log("frame sent:", buf.byteLength);
-        });
+        if (blob && wsRef.current?.readyState === WebSocket.OPEN) {
+          inflightRef.current += 1;
+          blob.arrayBuffer().then((buf) => {
+            wsRef.current.send(buf);
+            lastSendRef.current = now;
+            fpsRef.current += 1;
+          });
+        }
       }, "image/jpeg", 0.6);
-
-      lastSendRef.current = now;
-      fpsRef.current += 1;
     }
 
     rafRef.current = requestAnimationFrame(sendLoop);
-  }, []);
-  
-  /* ── start camera ── */
+  }, [streaming]);
+
+  /* ── 5. Start / Stop ── */
   const startCamera = async () => {
     try {
+      setError("");
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+        video: { facingMode: "environment", width: 1280, height: 720 },
       });
 
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-
-      connectWS();
-      rafRef.current = requestAnimationFrame(sendLoop);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
 
       setStreaming(true);
-    } catch {
+      connectWS();
+    } catch (err) {
+      console.error(err);
       setError(lang === "th" ? "กรุณาอนุญาตกล้อง" : "Camera permission required");
     }
   };
 
-  /* ── stop camera ── */
-  const stopCamera = () => {
-    cancelAnimationFrame(rafRef.current);
-    wsRef.current?.close();
+  const stopCamera = useCallback(() => {
+    setStreaming(false);
+    setConnected(false);
 
-    videoRef.current?.srcObject?.getTracks().forEach((t) => t.stop());
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+      videoRef.current.srcObject = null;
+    }
 
     const ctx = overlayRef.current?.getContext("2d");
     ctx?.clearRect(0, 0, overlayRef.current.width, overlayRef.current.height);
 
-    setStreaming(false);
-    setConnected(false);
     setDetections([]);
     setFps(0);
     setAiFps(0);
-  };
+    inflightRef.current = 0;
+  }, []);
 
-  useEffect(() => () => stopCamera(), []);
+  useEffect(() => {
+    if (streaming) {
+      rafRef.current = requestAnimationFrame(sendLoop);
+    }
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [streaming, sendLoop]);
 
-  /* ── capture ── */
+  useEffect(() => () => stopCamera(), [stopCamera]);
+
+  /* ── 6. Capture ── */
   const capture = () => {
     const video = videoRef.current;
     const overlay = overlayRef.current;
+    if (!video) return;
 
     const merged = document.createElement("canvas");
     merged.width = video.videoWidth;
@@ -231,11 +249,11 @@ export default function RealtimePage() {
       ...prev,
     ]);
   };
-  /* ════════════════════════════════════════════ */
+
   return (
     <div className="rt-wrapper">
 
-      {/* camera view */}
+      {/* ── Camera Block ── */}
       <div className="rt-camera-container">
         <div className="rt-camera-view">
           <video ref={videoRef} className="rt-video" playsInline muted />
@@ -244,10 +262,6 @@ export default function RealtimePage() {
 
           {!streaming && (
             <div className="rt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round"
-                  d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9A2.25 2.25 0 004.5 18.75z"/>
-              </svg>
               <p>{lang === "th" ? "กดเปิดกล้องเพื่อเริ่ม" : "Press open camera to start"}</p>
             </div>
           )}
@@ -281,9 +295,10 @@ export default function RealtimePage() {
         </div>
       </div>
 
-      {/* detection list */}
+      {/* ── Detection Panel ── */}
       <div className="rt-panel">
         <h3>{lang === "th" ? "ผลการตรวจจับ" : "Detections"} ({detections.length})</h3>
+
         {detections.length === 0 ? (
           <p className="rt-empty">{lang === "th" ? "ยังไม่พบวัตถุ" : "No objects detected"}</p>
         ) : (
@@ -300,7 +315,6 @@ export default function RealtimePage() {
           </ul>
         )}
 
-        {/* saved images */}
         {savedImages.length > 0 && (
           <div className="rt-saved">
             <div className="rt-saved-header">
@@ -312,18 +326,10 @@ export default function RealtimePage() {
             <div className="rt-saved-grid">
               {savedImages.map((img) => (
                 <div key={img.id} className="rt-saved-item">
-                  {/* ปุ่มลบรายตัว */}
                   <button
                     className="rt-saved-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSavedImages((prev) => prev.filter((i) => i.id !== img.id));
-                    }}
-                  >
-                    ✕
-                  </button>
-
-                  {/* กดที่รูปเพื่อดาวน์โหลด */}
+                    onClick={() => setSavedImages(p => p.filter(i => i.id !== img.id))}
+                  >✕</button>
                   <img
                     src={img.url}
                     alt="capture"
@@ -335,7 +341,6 @@ export default function RealtimePage() {
                     }}
                   />
                   <span>{img.time}</span>
-                  <span>{img.detections.length} obj</span>
                 </div>
               ))}
             </div>

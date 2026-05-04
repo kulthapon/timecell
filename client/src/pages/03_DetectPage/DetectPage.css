@@ -478,3 +478,186 @@
     position: static;
   }
 }
+
+/*
+ * DetectPage.css  — paste/merge เพิ่มใน DetectPage.css ที่มีอยู่แล้ว
+ * (ไม่แตะ class เดิม — เพิ่มแค่ส่วนใหม่)
+ */
+
+/* ── Progress card (sidebar) ────────────────────────────── */
+.proc-card {
+  background: var(--surface-alt, #f7f8fc);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+.proc-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin-bottom: 0.2rem;
+}
+.proc-count {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent, #4f7df3);
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+}
+.proc-count span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #999;
+}
+.proc-track {
+  height: 6px;
+  background: var(--border, #e0e0e0);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.6rem;
+}
+.proc-fill {
+  height: 100%;
+  background: var(--accent, #4f7df3);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* per-image status pills */
+.proc-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 0.25rem;
+}
+.proc-pill {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: background 0.2s, transform 0.2s;
+}
+.proc-pill--loading {
+  background: var(--border, #ddd);
+  animation: pill-pulse 1.2s ease-in-out infinite;
+}
+.proc-pill--done {
+  background: #22c55e;
+  transform: scale(1.15);
+}
+.proc-pill--error {
+  background: #ef4444;
+}
+@keyframes pill-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── LIVE badge ─────────────────────────────────────────── */
+.live-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: #ef4444;
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
+  animation: live-blink 1.4s ease-in-out infinite;
+}
+@keyframes live-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* ── Skeleton card ──────────────────────────────────────── */
+.skeleton-card {
+  pointer-events: none;
+}
+
+/* loading filename row */
+.img-file--loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #aaa;
+}
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #4f7df3);
+  flex-shrink: 0;
+  animation: pill-pulse 1s ease-in-out infinite;
+}
+
+/* skeleton shimmer mixin */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skeleton-img,
+.skeleton-crop {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+
+.skeleton-img {
+  width: 100%;
+  height: 220px;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-crops {
+  display: flex;
+  gap: 0.5rem;
+}
+.skeleton-crop {
+  width: 60px;
+  height: 72px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Camera button ────────────────────────────────────────────────────────── */
+.upload-btn-group {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.btn-camera {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 2px dashed #6366f1;
+  background: transparent;
+  color: #6366f1;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+.btn-camera:hover {
+  background: #6366f1;
+  color: #fff;
+  border-style: solid;
+}
+.btn-camera svg {
+  flex-shrink: 0;
+}

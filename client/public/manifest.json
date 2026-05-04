@@ -1,14 +1,14 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Time Cell",
+  "name": "Time Cell App",
   "icons": [
     {
-      "src": "icon/icon_01.png",
+      "src": "icon/icon_light.png",
       "type": "image/png",
       "sizes": "128x128"
     },
     {
-      "src": "icon/icon_02.png",
+      "src": "icon/icon_light.png",
       "type": "image/png",
       "sizes": "128x128"
     }

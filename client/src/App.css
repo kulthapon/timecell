@@ -15,9 +15,9 @@
 }
 
 :root[data-theme="dark"] {
-  --bg:          #0c0634;
-  --bg-sub:      #1a0636;
-  --bg-full:     #2f2e34;
+  --bg:          #121015;
+  --bg-sub:      #050220;
+  --bg-full:     #100c19;
   --text:        #f0f0f0;
   --text-sub:    #999999;
   --border:      #3a3a3a;
