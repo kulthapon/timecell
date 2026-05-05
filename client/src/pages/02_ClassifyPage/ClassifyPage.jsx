@@ -5,12 +5,12 @@ import "./ClassifyPage.css";
 const API_URL = process.env.REACT_APP_API_URL;
 const STEPS = ["upload", "edit", "loading", "result"];
 
-const PRESET_CROPS = [
-  { label: "Square", ratio: 1 },
-  { label: "4:3",    ratio: 4 / 3 },
-  { label: "3:4",    ratio: 3 / 4 },
-  { label: "16:9",   ratio: 16 / 9 },
-];
+const PRESET_CROPS = [ ];
+//   { label: "Square", ratio: 1 },
+//   { label: "4:3",    ratio: 4 / 3 },
+//   { label: "3:4",    ratio: 3 / 4 },
+//   { label: "16:9",   ratio: 16 / 9 },
+// ];
 
 export default function ClassifyPage() {
   const { lang } = useLang();

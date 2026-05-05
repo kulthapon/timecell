@@ -288,7 +288,7 @@ export default function RealtimePage() {
                 {lang === "th" ? "ปิดกล้อง" : "Close camera"}
               </button>
               <button onClick={capture} className="rt-btn rt-btn-capture">
-                📷 {lang === "th" ? "ถ่ายภาพ" : "Capture"}
+                {lang === "th" ? "ถ่ายภาพ" : "Capture"}
               </button>
             </>
           )}

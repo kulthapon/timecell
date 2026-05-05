@@ -146,10 +146,6 @@ export default function ProfilePage() {
 
         {/* Header */}
         <div className="profile-header">
-          <div className="profile-avatar">
-            {user?.firstname?.[0]?.toUpperCase()}
-          </div>
-
           <div>
             <h2>
               {user?.firstname} {user?.lastname}

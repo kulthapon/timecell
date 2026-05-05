@@ -568,11 +568,6 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
               </div>
             )}
 
-            {savedMsg && <p className="saved-msg">{savedMsg}</p>}
-            {!isLoggedIn && step==="result" && (
-              <p className="auth-note">{lang==="th" ? "เข้าสู่ระบบเพื่อบันทึกประวัติ" : "Login to save history"}</p>
-            )}
-
             {step === "result" && (
               <div className="result-actions">
                 <label className="btn-action btn-add-more">
@@ -581,7 +576,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
                     onChange={e=>handleAddMore(e.target.files)}/>
                 </label>
                 <button onClick={() => generatePdf(resultSlots, displaySummary, lang)} className="btn-action">
-                  📄 {lang==="th" ? "ดาวน์โหลด PDF" : "Download PDF"}
+                  {lang==="th" ? "ดาวน์โหลด PDF" : "Download PDF"}
                 </button>
                 <button onClick={downloadImages} className="btn-action">
                   {lang==="th" ? "ดาวน์โหลดภาพ" : "Download images"}

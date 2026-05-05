@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useLang } from "../../context/LangContext";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import "./HomePage.css";
 
 /* ─────────────────────────────────────────────
@@ -47,6 +48,7 @@ export default function HomePage() {
   const { theme } = useTheme();
   const { lang } = useLang();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [activeCell, setActiveCell] = useState(0);
   const logoSrc = theme === "light" ? "logo/logo_light.png" : "logo/logo_dark.png";
@@ -64,7 +66,7 @@ export default function HomePage() {
           </h1>
 
           <div className="hp-hero-btns">
-            <button className="hp-btn-outline">
+             <button className="hp-btn-outline" onClick={() => navigate("/realtime")}>
               {lang === "th" ? "เริ่มใช้งาน" : "Get Started"}
             </button>
           </div>

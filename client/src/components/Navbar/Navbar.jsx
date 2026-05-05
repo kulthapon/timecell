@@ -172,7 +172,6 @@ export default function Navbar() {
         {isLoggedIn ? (
           <>
             <Link to="/profile" className="sb-user">
-              <div className="sb-avatar">{user?.firstname?.[0]?.toUpperCase()}</div>
               <div className="sb-user-info">
                 <span className="sb-user-name">{user?.firstname} {user?.lastname}</span>
                 <span className="sb-user-email">{user?.email}</span>
