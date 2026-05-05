@@ -661,3 +661,389 @@
 .btn-camera svg {
   flex-shrink: 0;
 }
+
+/*
+ * DetectPage.css  — paste/merge เพิ่มใน DetectPage.css ที่มีอยู่แล้ว
+ * (ไม่แตะ class เดิม — เพิ่มแค่ส่วนใหม่)
+ */
+
+/* ── Progress card (sidebar) ────────────────────────────── */
+.proc-card {
+  background: var(--surface-alt, #f7f8fc);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+.proc-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin-bottom: 0.2rem;
+}
+.proc-count {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent, #4f7df3);
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+}
+.proc-count span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #999;
+}
+.proc-track {
+  height: 6px;
+  background: var(--border, #e0e0e0);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.6rem;
+}
+.proc-fill {
+  height: 100%;
+  background: var(--accent, #4f7df3);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* per-image status pills */
+.proc-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 0.25rem;
+}
+.proc-pill {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: background 0.2s, transform 0.2s;
+}
+.proc-pill--loading {
+  background: var(--border, #ddd);
+  animation: pill-pulse 1.2s ease-in-out infinite;
+}
+.proc-pill--done {
+  background: #22c55e;
+  transform: scale(1.15);
+}
+.proc-pill--error {
+  background: #ef4444;
+}
+@keyframes pill-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── LIVE badge ─────────────────────────────────────────── */
+.live-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: #ef4444;
+  border-radius: 4px;
+  padding: 1px 5px;
+  vertical-align: middle;
+  animation: live-blink 1.4s ease-in-out infinite;
+}
+@keyframes live-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* ── Skeleton card ──────────────────────────────────────── */
+.skeleton-card {
+  pointer-events: none;
+}
+
+/* loading filename row */
+.img-file--loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #aaa;
+}
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #4f7df3);
+  flex-shrink: 0;
+  animation: pill-pulse 1s ease-in-out infinite;
+}
+
+/* skeleton shimmer mixin */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+.skeleton-img,
+.skeleton-crop {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+
+.skeleton-img {
+  width: 100%;
+  height: 220px;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-crops {
+  display: flex;
+  gap: 0.5rem;
+}
+.skeleton-crop {
+  width: 60px;
+  height: 72px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* ─── View toggle ─────────────────────────────────────────────────────────── */
+.view-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface-alt, #f3f4f6);
+  border-radius: 10px;
+  padding: 4px;
+}
+.view-toggle-btn {
+  flex: 1;
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #888;
+  transition: all 0.15s;
+}
+.view-toggle-btn.active {
+  background: #fff;
+  color: var(--accent, #4f7df3);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* ─── View A: By class ────────────────────────────────────────────────────── */
+.view-byclass {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.class-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.class-section-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.class-section-count {
+  font-size: 0.85rem;
+  background: var(--accent-light, #eef2ff);
+  color: var(--accent, #4f7df3);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-weight: 700;
+}
+
+/* ─── View B: Gallery ─────────────────────────────────────────────────────── */
+.view-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.gallery-img-wrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  z-index: 2;
+  line-height: 1;
+}
+.gallery-arrow:hover:not(:disabled) { background: rgba(0,0,0,0.8); }
+.gallery-arrow:disabled { opacity: 0.25; cursor: default; }
+.gallery-arrow--left  { left: 10px; }
+.gallery-arrow--right { right: 10px; }
+.gallery-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.78rem;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+.gallery-filename {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 0.78rem;
+  border-radius: 20px;
+  padding: 2px 10px;
+  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gallery-crops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.gallery-crop-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #555;
+  font-weight: 600;
+}
+.gallery-crop-item img {
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e8e8e8);
+}
+
+/* ─── Add more button ─────────────────────────────────────────────────────── */
+.btn-add-more {
+  display: block;
+  text-align: center;
+  cursor: pointer;
+  border: 2px dashed var(--accent, #4f7df3) !important;
+  background: var(--accent-light, #eef2ff) !important;
+  color: var(--accent, #4f7df3) !important;
+}
+.btn-add-more:hover { opacity: 0.85; }
+.btn-reset {
+  background: transparent !important;
+  border: 1px solid var(--border, #ddd) !important;
+  color: #888 !important;
+}
+.btn-reset:hover { background: var(--surface-alt, #f5f5f5) !important; }
+
+.view-byclass {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* section ของแต่ละ class */
+.class-section {
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+}
+
+/* header ของแต่ละ class */
+.class-section-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.class-section-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.class-section-count {
+  background: #eef2ff;
+  color: #4f7df3;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* GRID แสดงในแนวนอนแบบ Flex + Wrap */
+.crop-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* BOX สำหรับแต่ละ cell */
+.crop-card {
+  width: 90px;            /* กำหนดให้เท่ากันทุกกล่อง */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 6px;
+  background: #fafafa;
+  transition: 0.15s ease;
+}
+
+.crop-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+/* รูปภาพเท่ากันทุกอัน */
+.crop-card img {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;      /* ทำให้ไม่บิดภาพ */
+  border-radius: 6px;
+}
+
+/* label */
+.crop-label {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #444;
+  text-align: center;
+}

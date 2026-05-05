@@ -1,11 +1,9 @@
 """
 routers/detect.py — Detection endpoints.
-
-POST /detect          — accept 1 or many files; returns object (1 file) or array
-POST /api/ai/detect   — single-file alias used by BatchDetectPage.jsx
 """
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile, Form
 from fastapi.responses import JSONResponse
+from typing import Optional, List
 
 from config import MAX_UPLOAD_MB
 from image_utils import pil_from_bytes
@@ -14,13 +12,13 @@ from ml.pipeline import process_single_image
 
 router = APIRouter()
 
-
 @router.post("/detect")
-async def detect(files: list[UploadFile] = File(...)):
+async def detect(
+    files: List[UploadFile] = File(...),
+    user_id: Optional[int] = Form(None) # เพิ่มการรับ user_id
+):
     """
     Detect cells in one or more images.
-    - Single file  → returns a plain JSON object
-    - Multiple files → returns {"results": [...]}
     """
     if yolo_model is None:
         return JSONResponse({"error": "YOLO model not loaded"}, status_code=503)
@@ -29,7 +27,10 @@ async def detect(files: list[UploadFile] = File(...)):
     for file in files:
         contents = await file.read()
         image    = pil_from_bytes(contents)
-        result   = process_single_image(image, file.filename)
+        
+        # ส่ง user_id เข้าไปเพื่อให้ระบบบันทึกประวัติได้ถูกคน (หรือเป็น NULL ถ้าไม่มี)
+        # หมายเหตุ: คุณต้องไปเพิ่ม parameter 'user_id' ในฟังก์ชัน process_single_image ด้วย
+        result   = process_single_image(image, file.filename, user_id=user_id)
         all_results.append(result)
 
     if len(all_results) == 1:
@@ -39,10 +40,12 @@ async def detect(files: list[UploadFile] = File(...)):
 
 
 @router.post("/api/ai/detect")
-async def detect_single(file: UploadFile = File(...)):
+async def detect_single(
+    file: UploadFile = File(...),
+    user_id: Optional[int] = Form(None) # เพิ่มการรับ user_id
+):
     """
     Single-file detect endpoint — used by BatchDetectPage.jsx.
-    Strict validation (content-type, file size).
     """
     if yolo_model is None:
         raise HTTPException(status_code=503, detail="YOLO model not loaded")
@@ -58,5 +61,7 @@ async def detect_single(file: UploadFile = File(...)):
         )
 
     image  = pil_from_bytes(contents)
-    result = process_single_image(image, file.filename)
+    
+    # ส่ง user_id เข้าไปที่ pipeline
+    result = process_single_image(image, file.filename, user_id=user_id)
     return JSONResponse(result)

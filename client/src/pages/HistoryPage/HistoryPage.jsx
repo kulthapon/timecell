@@ -1,15 +1,3 @@
-/**
- * HistoryPage.jsx
- * ─────────────────────────────────────────────
- * Shows saved detection batches.
- * Features:
- *  - List of past batches (newest first) with summary stats
- *  - Delete button per row
- *  - Click a row → expand to show per-image results + crops
- *  - "Add more images" button → opens BatchDetectPage pre-loaded with that batch's context
- *    (in practice we just navigate back; the parent app can handle routing)
- */
-
 import { useState, useEffect, useCallback } from "react";
 import { useLang } from "../../context/LangContext";
 import { useAuth } from "../../context/AuthContext";
@@ -17,202 +5,118 @@ import "./HistoryPage.css";
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-/* ─── helpers ─── */
 function fmtDate(iso, lang) {
   return new Date(iso).toLocaleString(lang === "th" ? "th-TH" : "en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
+    dateStyle: "medium", timeStyle: "short",
   });
 }
 
-/* ─── sub-components ─── */
+/* ─── ClassBar ────────────────────────────────────────────────────────────── */
 function ClassBar({ cls, count, total }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div className="hp-class-row">
       <span className="hp-class-name">{cls}</span>
-      <div className="hp-bar-wrap">
-        <div className="hp-bar-fill" style={{ width: `${pct}%` }} />
-      </div>
+      <div className="hp-bar-wrap"><div className="hp-bar-fill" style={{ width:`${pct}%` }}/></div>
       <span className="hp-class-count">{count}</span>
     </div>
   );
 }
 
-function CropGrid({ crops }) {
-  if (!crops?.length) return null;
-  return (
-    <div className="hp-crop-grid">
-      {crops.map((c, i) => (
-        <div key={i} className="hp-crop-item">
-          <img src={c.dataUrl} alt={c.label} />
-          <span>
-            {c.label} ({Math.round((c.confidence ?? c.conf ?? 0) * 100)}%)
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function BatchDetail({ batch, lang, onClose, onAnalyzeMore }) {
-  /* batch.images is an array of image records */
-  return (
-    <div className="hp-detail-overlay" onClick={onClose}>
-      <div
-        className="hp-detail-panel"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="hp-detail-header">
-          <div>
-            <h2>{fmtDate(batch.created_at, lang)}</h2>
-            <p className="hp-detail-sub">
-              {batch.image_count}{" "}
-              {lang === "th" ? "ภาพ" : "images"} ·{" "}
-              {batch.total_cells}{" "}
-              {lang === "th" ? "เซลล์" : "cells"}
-            </p>
-          </div>
-          <div className="hp-detail-header-actions">
-            <button className="btn-action" onClick={onAnalyzeMore}>
-              {lang === "th" ? "+ วิเคราะห์ภาพเพิ่ม" : "+ Analyze more images"}
-            </button>
-            <button className="btn-ghost-sm" onClick={onClose}>✕</button>
-          </div>
-        </div>
-
-        {/* Class summary */}
-        {batch.summary?.byClass && (
-          <div className="hp-detail-summary">
-            <p className="hp-section-title">
-              {lang === "th" ? "สรุปแต่ละคลาส" : "Class summary"}
-            </p>
-            {Object.entries(batch.summary.byClass)
-              .sort((a, b) => b[1] - a[1])
-              .map(([cls, cnt]) => (
-                <ClassBar
-                  key={cls}
-                  cls={cls}
-                  count={cnt}
-                  total={batch.total_cells}
-                />
-              ))}
-          </div>
-        )}
-
-        {/* Per-image results */}
-        <p className="hp-section-title" style={{ marginTop: "1.5rem" }}>
-          {lang === "th" ? "ผลแต่ละภาพ" : "Per-image results"}
-        </p>
-        {(batch.images ?? []).map((img, idx) => (
-          <div key={idx} className="hp-img-block">
-            <p className="hp-img-filename">
-              {idx + 1}. {img.filename}
-              <span className="hp-img-count">
-                {img.detections?.length ?? 0}{" "}
-                {lang === "th" ? "เซลล์" : "cells"}
-              </span>
-            </p>
-
-            {img.annotated_b64 && (
-              <img
-                src={`data:image/jpeg;base64,${img.annotated_b64}`}
-                alt={img.filename}
-                className="hp-img-annotated"
-              />
-            )}
-
-            <CropGrid crops={img.crops_b64 ?? img.crops} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Main Page ─── */
-export default function HistoryPage({ onNavigateToDetect }) {
+/* ─── Main ────────────────────────────────────────────────────────────────── */
+export default function HistoryPage({ onNavigateToDetect, onContinueBatch }) {
   const { lang } = useLang();
   const { isLoggedIn, getToken } = useAuth();
 
-  const [batches, setBatches]     = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState("");
-  const [selected, setSelected]   = useState(null);   // full batch detail
+  const [batches, setBatches]         = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState("");
+  const [detailId, setDetailId]       = useState(null);
+  const [detail, setDetail]           = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  /* ─── fetch list ─── */
-  const fetchHistory = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const headers = {};
-      if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`;
+  const authHeaders = useCallback(() => {
+    const h = {};
+    if (isLoggedIn) h["Authorization"] = `Bearer ${getToken()}`;
+    return h;
+  }, [isLoggedIn, getToken]);
 
+  /* ── fetch list ── */
+  const fetchHistory = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
       const res = await fetch(`${API_URL}/api/ai/history?limit=50`, {
-        headers,
-        credentials: "include",
+        headers: authHeaders(), credentials: "include",
       });
       if (!res.ok) throw new Error(res.statusText);
-      const data = await res.json();
-      setBatches(data);
-    } catch (e) {
+      setBatches(await res.json());
+    } catch {
       setError(lang === "th" ? "โหลดประวัติไม่สำเร็จ" : "Failed to load history");
     } finally {
       setLoading(false);
     }
-  }, [isLoggedIn, getToken, lang]);
+  }, [authHeaders, lang]);
 
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
-  /* ─── delete ─── */
-  const handleDelete = async (id, e) => {
-    e.stopPropagation();
-    if (!window.confirm(lang === "th" ? "ลบรายการนี้?" : "Delete this record?"))
-      return;
-
+  /* ── fetch detail ── */
+  const openDetail = async (id) => {
+    setDetailId(id); setDetail(null); setDetailLoading(true);
     try {
-      const headers = {};
-      if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`;
-
       const res = await fetch(`${API_URL}/api/ai/history/${id}`, {
-        method: "DELETE",
-        headers,
-        credentials: "include",
+        headers: authHeaders(), credentials: "include",
       });
       if (!res.ok) throw new Error();
-      setBatches((prev) => prev.filter((b) => b.id !== id));
-      if (selected?.id === id) setSelected(null);
-    } catch {
-      alert(lang === "th" ? "ลบไม่สำเร็จ" : "Delete failed");
-    }
-  };
-
-  /* ─── open detail ─── */
-  const handleOpen = async (id) => {
-    setDetailLoading(true);
-    try {
-      const headers = {};
-      if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`;
-
-      const res = await fetch(`${API_URL}/api/ai/history/${id}`, {
-        headers,
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setSelected(data);
+      setDetail(await res.json());
     } catch {
       alert(lang === "th" ? "โหลดรายละเอียดไม่สำเร็จ" : "Failed to load detail");
+      setDetailId(null);
     } finally {
       setDetailLoading(false);
     }
   };
 
-  /* ─── render ─── */
+  const closeDetail = () => { setDetailId(null); setDetail(null); };
+
+  /* ── delete ── */
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm(lang === "th" ? "ลบรายการนี้?" : "Delete this record?")) return;
+    try {
+      const res = await fetch(`${API_URL}/api/ai/history/${id}`, {
+        method: "DELETE", headers: authHeaders(), credentials: "include",
+      });
+      if (!res.ok) throw new Error();
+      setBatches(prev => prev.filter(b => b.id !== id));
+      if (detailId === id) closeDetail();
+    } catch {
+      alert(lang === "th" ? "ลบไม่สำเร็จ" : "Delete failed");
+    }
+  };
+
+  /* ── continue batch — โหลด detail แล้ว navigate ไป DetectPage ── */
+  const handleContinue = async () => {
+    if (!detailId) return;
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/ai/history/${detailId}`, {
+        headers: authHeaders(), credentials: "include",
+      });
+      if (!res.ok) throw new Error();
+      const rec = await res.json();
+      // ส่งไปเป็น array (DetectPage รับ initialBatch เป็น array of records)
+      onContinueBatch?.([rec], detailId);
+    } catch {
+      alert(lang === "th" ? "โหลดไม่สำเร็จ" : "Failed to load");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const getBatchSummary = (b) => b.result_json?.class_summary ?? {};
+  const getBatchTotal   = (b) => Object.values(getBatchSummary(b)).reduce((a,v)=>a+v, 0);
+
+  /* ═══ Render ═══ */
   return (
     <div className="hp-wrapper">
 
@@ -225,15 +129,8 @@ export default function HistoryPage({ onNavigateToDetect }) {
       </div>
 
       {/* States */}
-      {loading && (
-        <div className="hp-center">
-          <div className="proc-spinner" />
-        </div>
-      )}
-
-      {error && !loading && (
-        <div className="hp-center hp-error">{error}</div>
-      )}
+      {loading && <div className="hp-center"><div className="proc-spinner"/></div>}
+      {error && !loading && <div className="hp-center hp-error">{error}</div>}
 
       {!loading && !error && batches.length === 0 && (
         <div className="hp-center hp-empty">
@@ -248,82 +145,109 @@ export default function HistoryPage({ onNavigateToDetect }) {
         </div>
       )}
 
-      {/* Batch list */}
+      {/* List */}
       {!loading && batches.length > 0 && (
         <div className="hp-list">
-          {batches.map((b) => (
-            <div
-              key={b.id}
-              className="hp-batch-card"
-              onClick={() => handleOpen(b.id)}
-            >
-              {/* Left: date + stats */}
-              <div className="hp-batch-info">
-                <span className="hp-batch-date">{fmtDate(b.created_at, lang)}</span>
-                <div className="hp-batch-stats">
-                  <span>
-                    🖼 {b.image_count}{" "}
-                    {lang === "th" ? "ภาพ" : "img"}
-                  </span>
-                  <span>
-                    🔬 {b.total_cells}{" "}
-                    {lang === "th" ? "เซลล์" : "cells"}
-                  </span>
-                </div>
-                {/* top 3 classes */}
-                <div className="hp-batch-classes">
-                  {Object.entries(b.summary?.byClass ?? {})
-                    .sort((a, c) => c[1] - a[1])
-                    .slice(0, 3)
-                    .map(([cls, cnt]) => (
-                      <span key={cls} className="hp-cls-chip">
-                        {cls}: {cnt}
-                      </span>
+          {batches.map(b => {
+            const summary = getBatchSummary(b);
+            const total   = getBatchTotal(b);
+            return (
+              <div key={b.id} className="hp-batch-card" onClick={() => openDetail(b.id)}>
+                <div className="hp-batch-info">
+                  <span className="hp-batch-date">{fmtDate(b.created_at, lang)}</span>
+                  <div className="hp-batch-stats">
+                    <span>🔬 {total} {lang === "th" ? "เซลล์" : "cells"}</span>
+                    <span>{b.filename ?? (lang === "th" ? "ไม่ระบุ" : "unknown")}</span>
+                  </div>
+                  <div className="hp-batch-classes">
+                    {Object.entries(summary).sort((a,c)=>c[1]-a[1]).slice(0,3).map(([cls,cnt])=>(
+                      <span key={cls} className="hp-cls-chip">{cls}: {cnt}</span>
                     ))}
+                  </div>
+                </div>
+                <div className="hp-batch-actions" onClick={e => e.stopPropagation()}>
+                  <button className="btn-action" onClick={() => openDetail(b.id)}>
+                    {lang === "th" ? "ดูผล" : "View"}
+                  </button>
+                  <button className="btn-danger-sm" onClick={e => handleDelete(b.id, e)}>🗑</button>
                 </div>
               </div>
-
-              {/* Right: actions */}
-              <div className="hp-batch-actions" onClick={(e) => e.stopPropagation()}>
-                <button
-                  className="btn-action"
-                  onClick={() => handleOpen(b.id)}
-                >
-                  {lang === "th" ? "ดูผล" : "View"}
-                </button>
-                <button
-                  className="btn-danger-sm"
-                  onClick={(e) => handleDelete(b.id, e)}
-                  title={lang === "th" ? "ลบ" : "Delete"}
-                >
-                  🗑
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Loading spinner for detail */}
-      {detailLoading && (
-        <div className="hp-detail-overlay">
-          <div className="proc-spinner" />
+      {/* Detail overlay */}
+      {detailId && (
+        <div className="hp-detail-overlay" onClick={closeDetail}>
+          <div className="hp-detail-panel" onClick={e => e.stopPropagation()}>
+
+            {detailLoading ? (
+              <div className="hp-center"><div className="proc-spinner"/></div>
+            ) : detail ? (
+              <>
+                {/* Header */}
+                <div className="hp-detail-header">
+                  <div>
+                    <h2>{detail.filename}</h2>
+                    <p className="hp-detail-sub">{fmtDate(detail.created_at, lang)}</p>
+                  </div>
+                  <div className="hp-detail-header-actions">
+                    {/* ปุ่มเพิ่มภาพต่อ */}
+                    <button className="btn-action" onClick={handleContinue}>
+                      {lang === "th" ? "+ เพิ่มภาพต่อ" : "+ Continue analysis"}
+                    </button>
+                    <button className="btn-ghost-sm" onClick={closeDetail}>✕</button>
+                  </div>
+                </div>
+
+                {/* Annotated image */}
+                {detail.annotatedB64 && (
+                  <img
+                    src={`data:image/jpeg;base64,${detail.annotatedB64}`}
+                    alt={detail.filename}
+                    className="hp-img-annotated"
+                  />
+                )}
+
+                {/* Class summary */}
+                {detail.class_summary && (
+                  <div className="hp-detail-summary">
+                    <p className="hp-section-title">
+                      {lang === "th" ? "สรุปแต่ละคลาส" : "Class summary"}
+                    </p>
+                    {(() => {
+                      const total = Object.values(detail.class_summary).reduce((a,b)=>a+b,0);
+                      return Object.entries(detail.class_summary)
+                        .sort((a,b)=>b[1]-a[1])
+                        .map(([cls,cnt]) => (
+                          <ClassBar key={cls} cls={cls} count={cnt} total={total}/>
+                        ));
+                    })()}
+                  </div>
+                )}
+
+                {/* Crops */}
+                {detail.crops?.length > 0 && (
+                  <>
+                    <p className="hp-section-title" style={{ marginTop:"1rem" }}>
+                      {lang === "th" ? "ภาพเซลล์ที่พบ" : "Detected cells"}
+                    </p>
+                    <div className="hp-crop-grid">
+                      {detail.crops.map((c, i) => (
+                        <div key={i} className="hp-crop-item">
+                          <img src={c.dataUrl} alt={c.label}/>
+                          <span>{c.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : null}
+          </div>
         </div>
       )}
-
-      {/* Detail panel */}
-      {selected && !detailLoading && (
-        <BatchDetail
-          batch={selected}
-          lang={lang}
-          onClose={() => setSelected(null)}
-          onAnalyzeMore={() => {
-            setSelected(null);
-            onNavigateToDetect?.();
-          }}
-        />
-      )}
-
     </div>
   );
 }

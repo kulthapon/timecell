@@ -18,7 +18,6 @@ function saveBase64(b64, filename) {
 }
 
 /* ─── WebSocket Proxy ─────────────────────────────────────────────────────── */
-// pathRewrite ไม่ต้องใส่ — server.js แก้ req.url ก่อน upgrade แล้ว
 const aiWsProxy = createProxyMiddleware({
   target:       AI_WS_URL,
   changeOrigin: true,
@@ -34,8 +33,7 @@ async function classify(req, res) {
     filename:    req.file.originalname,
     contentType: req.file.mimetype,
   });
-
-  const fields = ["brightness", "contrast", "color", "crop_x", "crop_y", "crop_w", "crop_h"];
+  const fields = ["brightness","contrast","color","crop_x","crop_y","crop_w","crop_h"];
   for (const key of fields) {
     if (req.body[key] !== undefined) form.append(key, String(req.body[key]));
   }
@@ -50,12 +48,12 @@ async function classify(req, res) {
   }
 }
 
-/* ─── detect (single file — ใช้กับ BatchDetectPage) ─────────────────────── */
+/* ─── detect (single file) ────────────────────────────────────────────────── */
 async function detectSingle(req, res) {
   if (!req.file) return res.status(400).json({ message: "no_file" });
 
   const form = new FormData();
-  form.append("files", req.file.buffer, {       // ← "files" ตรงกับ AI /detect
+  form.append("files", req.file.buffer, {
     filename:    req.file.originalname,
     contentType: req.file.mimetype,
   });
@@ -66,8 +64,55 @@ async function detectSingle(req, res) {
     const data = await r.json();
 
     // normalize: AI ส่งกลับ object เดียว หรือ {results:[]}
-    const results = data.results ?? [data];
-    const saved   = await _saveResults(results, req.user?.id ?? null);
+    const results  = data.results ?? [data];
+    const userId   = req.user?.id ?? null;
+    const ts       = Date.now();
+    const saved    = [];
+
+    for (const [i, result] of results.entries()) {
+      // บันทึกภาพ original ลง disk (ใช้ต่อเมื่อโหลดจาก history)
+      const origFilename  = `orig_${ts}_${i}_${result.filename ?? "img"}.jpg`;
+      const origPath      = saveBase64(
+        req.file.buffer.toString("base64"),
+        origFilename
+      );
+
+      // บันทึก annotated image (จาก AI) สำหรับ preview ใน history
+      let annotatedPath = null;
+      if (result.annotated || result.image) {
+        annotatedPath = saveBase64(
+          result.annotated ?? result.image,
+          `annotated_${ts}_${i}.jpg`
+        );
+      }
+
+      // DB
+      let insertId = null;
+      if (userId) {
+        const [row] = await db.query(
+          `INSERT INTO history (user_id, image_path, result_json)
+           VALUES (?, ?, ?)`,
+          [
+            userId,
+            origPath,
+            JSON.stringify({
+              filename:      result.filename,
+              class_summary: result.class_summary ?? {},
+              detections:    result.detections ?? [],
+              annotated_path: annotatedPath,
+            }),
+          ]
+        );
+        insertId = row.insertId;
+      }
+
+      saved.push({
+        ...result,
+        orig_path:     origPath,
+        annotated_path: annotatedPath,
+        history_id:    insertId,
+      });
+    }
 
     // BatchDetectPage คาด object เดียว
     res.json(saved[0]);
@@ -83,19 +128,42 @@ async function detectBatch(req, res) {
 
   const form = new FormData();
   for (const file of req.files) {
-    form.append("files", file.buffer, {           // ← "files" plural
-      filename:    file.originalname,
-      contentType: file.mimetype,
-    });
+    form.append("files", file.buffer, { filename: file.originalname, contentType: file.mimetype });
   }
 
   try {
     const r = await fetch(`${AI_URL}/detect`, { method: "POST", body: form });
     if (!r.ok) throw new Error(`AI responded ${r.status}`);
-    const data = await r.json();
-
+    const data    = await r.json();
     const results = data.results ?? [data];
-    const saved   = await _saveResults(results, req.user?.id ?? null);
+    const userId  = req.user?.id ?? null;
+    const ts      = Date.now();
+    const saved   = [];
+
+    for (const [i, result] of results.entries()) {
+      const origPath = saveBase64(
+        req.files[i].buffer.toString("base64"),
+        `orig_${ts}_${i}_${result.filename ?? "img"}.jpg`
+      );
+      let annotatedPath = null;
+      if (result.annotated || result.image) {
+        annotatedPath = saveBase64(result.annotated ?? result.image, `annotated_${ts}_${i}.jpg`);
+      }
+      let insertId = null;
+      if (userId) {
+        const [row] = await db.query(
+          `INSERT INTO history (user_id, image_path, result_json) VALUES (?, ?, ?)`,
+          [userId, origPath, JSON.stringify({
+            filename:      result.filename,
+            class_summary: result.class_summary ?? {},
+            detections:    result.detections ?? [],
+            annotated_path: annotatedPath,
+          })]
+        );
+        insertId = row.insertId;
+      }
+      saved.push({ ...result, orig_path: origPath, annotated_path: annotatedPath, history_id: insertId });
+    }
 
     res.json({ results: saved });
   } catch (err) {
@@ -104,54 +172,44 @@ async function detectBatch(req, res) {
   }
 }
 
-/* ─── helper: บันทึกผลลัพธ์ลง DB + disk ─────────────────────────────────── */
-async function _saveResults(results, userId) {
-  const ts   = Date.now();
-  const saved = [];
+/* ─── POST /history — save extra images (append to existing batch) ────────── */
+async function saveHistory(req, res) {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ message: "unauthorized" });
 
-  for (const [i, result] of results.entries()) {
-    // บันทึก annotated image
-    const annotatedPath = result.annotated
-      ? saveBase64(result.annotated, `detect_${ts}_${i}_annotated.jpg`)
-      : result.image
-        ? saveBase64(result.image, `detect_${ts}_${i}_annotated.jpg`)
-        : `detect_${ts}_${i}.jpg`;
+  const { images = [], history_id } = req.body;
+  if (!images.length) return res.json({ message: "nothing to save" });
 
-    // บันทึก crops แยกตาม class
-    const cropPaths = {};
-    for (const [cls, crops] of Object.entries(result.crops_by_class ?? {})) {
-      cropPaths[cls] = crops.map((b64, j) =>
-        saveBase64(b64, `detect_${ts}_${i}_${cls}_${j}.jpg`)
+  const ts = Date.now();
+  const ids = [];
+
+  try {
+    for (const [i, img] of images.entries()) {
+      // ถ้า append ต่อ batch เก่า → update parent record (หรือ insert ใหม่ก็ได้)
+      const [row] = await db.query(
+        `INSERT INTO history (user_id, image_path, result_json) VALUES (?, ?, ?)`,
+        [
+          userId,
+          img.image_path ?? null,
+          JSON.stringify({
+            filename:      img.filename,
+            class_summary: img.class_summary ?? {},
+            detections:    img.detections ?? [],
+            parent_id:     history_id ?? null,
+          }),
+        ]
       );
+      ids.push(row.insertId);
     }
-
-    const [row] = await db.query(
-      `INSERT INTO history (user_id, image_path, result_json)
-       VALUES (?, ?, ?)`,
-      [
-        userId,
-        annotatedPath,
-        JSON.stringify({
-          filename:      result.filename,
-          class_summary: result.class_summary,
-          crop_paths:    cropPaths,
-        }),
-      ]
-    );
-
-    saved.push({
-      ...result,
-      annotated_path: annotatedPath,
-      crop_paths:     cropPaths,
-      history_id:     row.insertId,
-    });
+    res.json({ ids });
+  } catch (err) {
+    console.error("[saveHistory]", err.message);
+    res.status(500).json({ message: "server_error" });
   }
-
-  return saved;
 }
 
-/* ─── history ─────────────────────────────────────────────────────────────── */
-async function history(req, res) {
+/* ─── GET /history — list ─────────────────────────────────────────────────── */
+async function getHistory(req, res) {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ message: "unauthorized" });
 
@@ -164,34 +222,59 @@ async function history(req, res) {
        LIMIT 50`,
       [userId]
     );
-
-    res.json(
-      rows.map(r => ({
-        ...r,
-        result_json: JSON.parse(r.result_json),
-      }))
-    );
+    res.json(rows.map(r => ({ ...r, result_json: JSON.parse(r.result_json) })));
   } catch (err) {
-    console.error("[history]", err.message);
+    console.error("[getHistory]", err.message);
     res.status(500).json({ message: "server_error" });
   }
 }
 
-/* ─── deleteHistory ───────────────────────────────────────────────────────── */
-async function deleteHistory(req, res) {
+/* ─── GET /history/:id — detail with detections + image_path ──────────────── */
+async function getHistoryDetail(req, res) {
   const userId = req.user?.id;
-  const { id } = req.params;
+  const { id }  = req.params;
 
   try {
     const [[row]] = await db.query(
-      "SELECT image_path FROM history WHERE id = ? AND user_id = ?",
+      `SELECT id, image_path, result_json, created_at
+       FROM history WHERE id = ? AND user_id = ?`,
       [id, userId]
     );
     if (!row) return res.status(404).json({ message: "not_found" });
 
-    // ลบไฟล์ภาพบน disk
-    if (row.image_path) {
-      const abs = path.join(__dirname, "..", row.image_path);
+    const rj = JSON.parse(row.result_json);
+    res.json({
+      id:            row.id,
+      created_at:    row.created_at,
+      filename:      rj.filename,
+      image_path:    row.image_path,              // path สำหรับ reload ภาพ
+      annotated_path: rj.annotated_path ?? null,  // path ภาพ annotated
+      detections:    rj.detections ?? [],          // detections สำหรับวาด bbox ใหม่
+      class_summary: rj.class_summary ?? {},
+    });
+  } catch (err) {
+    console.error("[getHistoryDetail]", err.message);
+    res.status(500).json({ message: "server_error" });
+  }
+}
+
+/* ─── DELETE /history/:id ─────────────────────────────────────────────────── */
+async function deleteHistory(req, res) {
+  const userId = req.user?.id;
+  const { id }  = req.params;
+
+  try {
+    const [[row]] = await db.query(
+      "SELECT image_path, result_json FROM history WHERE id = ? AND user_id = ?",
+      [id, userId]
+    );
+    if (!row) return res.status(404).json({ message: "not_found" });
+
+    // ลบไฟล์บน disk
+    const rj = JSON.parse(row.result_json ?? "{}");
+    for (const p of [row.image_path, rj.annotated_path]) {
+      if (!p) continue;
+      const abs = path.join(__dirname, "..", p);
       if (fs.existsSync(abs)) fs.unlinkSync(abs);
     }
 
@@ -208,6 +291,8 @@ module.exports = {
   classify,
   detectSingle,
   detectBatch,
-  history,
+  saveHistory,
+  getHistory,
+  getHistoryDetail,
   deleteHistory,
 };

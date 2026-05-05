@@ -1,14 +1,3 @@
-"""
-routers/history.py — Batch history endpoints.
-
-POST   /detect/save           — save batch results to DB + images to disk
-GET    /detect/history        — list saved batches (newest first)
-GET    /detect/history/{id}   — full detail of one batch
-DELETE /detect/history/{id}   — delete batch record + image files on disk
-
-Auth is handled entirely by the frontend/backend (Node).
-The AI service trusts all requests — run behind an internal network only.
-"""
 import json
 import logging
 import shutil
