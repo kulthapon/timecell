@@ -261,8 +261,10 @@ export default function RealtimePage() {
           <canvas ref={canvasRef} style={{ display: "none" }} />
 
           {!streaming && (
-            <div className="rt-placeholder">
-              <p>{lang === "th" ? "กดเปิดกล้องเพื่อเริ่ม" : "Press open camera to start"}</p>
+            <div class="aspect-box"> 
+              <div className="rt-placeholder">
+                <p>{lang === "th" ? "กดเปิดกล้องเพื่อเริ่ม" : "Press open camera to start"}</p>
+              </div>
             </div>
           )}
 

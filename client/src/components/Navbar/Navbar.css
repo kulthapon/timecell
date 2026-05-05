@@ -150,6 +150,7 @@
 .sb-user-info {
   display: flex;
   flex-direction: column;
+  margin-left: 10px;
   min-width: 0;
   opacity: 0;
   transition: opacity 0.12s;

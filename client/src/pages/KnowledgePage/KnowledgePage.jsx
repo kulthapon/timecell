@@ -25,10 +25,6 @@ function CellCard({ cell, lang, onClick }) {
         {lang === "th" && (
           <div className="cell-name-en">{cell.name.en}</div>
         )}
-        <span className="cell-pct" style={{ background: cell.bg, color: cell.color }}>
-          ~{cell.pct}%
-        </span>
-        <div className="cell-summary">{cell.summary[lang]}</div>
         <span className="see-more" style={{ color: cell.color }}>
           {lang === "th" ? "ดูคลังรูปภาพ →" : "View gallery →"}
         </span>
@@ -49,7 +45,7 @@ export default function KnowledgePage() {
       <div className="hero">
         <h1>
           {lang === "th"
-            ? "เซลล์เม็ดเลือดขาวในของเหลวในร่างกาย"
+            ? "เซลล์เม็ดเลือดขาวจากของเหลวในร่างกาย"
             : "White Blood Cells in Body Fluid"}
         </h1>
         <p className="hero-desc">

@@ -22,13 +22,13 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  background: var(--bg);
+  background: var(--bg-sub);
   transition: border-color 0.15s, background 0.15s;
 }
 
 .batch-dropzone:hover {
   border-color: var(--primary);
-  background: var(--bg-sub);
+  background: var(--bg);
 }
 
 .batch-dropzone svg {
@@ -1046,4 +1046,202 @@
   font-size: 11px;
   color: #444;
   text-align: center;
+}
+
+/* ── เพิ่มใน ClassifyPage.css ── */
+
+/* Divider */
+.cls-upload-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 12px;
+  color: var(--text-muted, #9ca3af);
+  font-size: 0.85rem;
+}
+.cls-upload-divider::before,
+.cls-upload-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border, #e5e7eb);
+}
+
+/* Camera button */
+.cls-btn-camera {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--surface, #f9fafb);
+  color: var(--text, #374151);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+.cls-btn-camera:hover {
+  background: var(--surface-hover, #f3f4f6);
+  border-color: var(--primary, #6366f1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #6366f1) 12%, transparent);
+}
+.cls-camera-icon-sm {
+  width: 20px;
+  height: 20px;
+  stroke: var(--primary, #6366f1);
+  flex-shrink: 0;
+}
+
+/* Camera overlay */
+.cls-camera-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.cls-camera-modal {
+  background: var(--card-bg, #fff);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.cls-camera-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.cls-camera-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text, #111827);
+}
+.cls-camera-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.cls-camera-close:hover {
+  background: var(--surface, #f3f4f6);
+  color: var(--text, #111827);
+}
+
+.cls-camera-viewfinder {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: #000;
+  overflow: hidden;
+}
+.cls-camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cls-camera-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+}
+.cls-camera-loading .cls-error {
+  text-align: center;
+  padding: 0 24px;
+}
+
+.cls-camera-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  gap: 16px;
+}
+
+/* Shutter button */
+.cls-camera-shutter {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform 0.12s;
+}
+.cls-camera-shutter:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cls-camera-shutter:not(:disabled):active {
+  transform: scale(0.92);
+}
+.cls-shutter-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 3px solid var(--primary, #6366f1);
+  background: transparent;
+  transition: border-color 0.15s;
+}
+.cls-camera-shutter:not(:disabled):hover .cls-shutter-ring {
+  border-color: var(--primary-dark, #4f46e5);
+}
+.cls-shutter-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary, #6366f1);
+  transition: background 0.15s, transform 0.12s;
+}
+.cls-camera-shutter:not(:disabled):hover .cls-shutter-dot {
+  background: var(--primary-dark, #4f46e5);
+}
+.cls-camera-shutter:not(:disabled):active .cls-shutter-dot {
+  transform: scale(0.88);
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .cls-camera-modal {
+    border-radius: 14px;
+  }
+  .cls-camera-actions {
+    padding: 12px 16px;
+  }
+  .cls-shutter-ring {
+    width: 56px;
+    height: 56px;
+  }
+  .cls-shutter-dot {
+    width: 42px;
+    height: 42px;
+  }
 }

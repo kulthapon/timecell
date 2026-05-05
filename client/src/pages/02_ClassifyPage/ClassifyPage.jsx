@@ -5,12 +5,7 @@ import "./ClassifyPage.css";
 const API_URL = process.env.REACT_APP_API_URL;
 const STEPS = ["upload", "edit", "loading", "result"];
 
-const PRESET_CROPS = [ ];
-//   { label: "Square", ratio: 1 },
-//   { label: "4:3",    ratio: 4 / 3 },
-//   { label: "3:4",    ratio: 3 / 4 },
-//   { label: "16:9",   ratio: 16 / 9 },
-// ];
+const PRESET_CROPS = [];
 
 export default function ClassifyPage() {
   const { lang } = useLang();
@@ -25,9 +20,17 @@ export default function ClassifyPage() {
   const [result,      setResult]      = useState(null);
   const [error,       setError]       = useState("");
 
-  const cropAreaRef = useRef(null);
-  const startRef    = useRef(null);
+  // Camera states
+  const [cameraOpen,  setCameraOpen]  = useState(false);
+  const [cameraError, setCameraError] = useState("");
+  const [streaming,   setStreaming]   = useState(false);
+
+  const cropAreaRef  = useRef(null);
+  const startRef     = useRef(null);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const videoRef     = useRef(null);
+  const streamRef    = useRef(null);
 
   const imgFilter = `brightness(${adj.brightness}) contrast(${adj.contrast}) saturate(${adj.color})`;
   const stepIndex = STEPS.indexOf(step);
@@ -50,6 +53,56 @@ export default function ClassifyPage() {
   const handleDrop = (e) => {
     e.preventDefault();
     handleFile(e.dataTransfer.files?.[0]);
+  };
+
+  // ── Camera ────────────────────────────────
+  const openCamera = async () => {
+    setCameraError("");
+    setCameraOpen(true);
+    setStreaming(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+        setStreaming(true);
+      }
+    } catch (err) {
+      setCameraError(
+        lang === "th"
+          ? "ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้งานกล้อง"
+          : "Cannot access camera. Please allow camera permission."
+      );
+    }
+  };
+
+  const closeCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setCameraOpen(false);
+    setStreaming(false);
+    setCameraError("");
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const f = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+      closeCamera();
+      handleFile(f);
+    }, "image/jpeg", 0.92);
   };
 
   // ── crop interaction ───────────────────────
@@ -161,6 +214,60 @@ export default function ClassifyPage() {
   return (
     <div className="cls-wrapper">
 
+      {/* ── Camera Modal ── */}
+      {cameraOpen && (
+        <div className="cls-camera-overlay">
+          <div className="cls-camera-modal">
+            <div className="cls-camera-header">
+              <span className="cls-camera-title">
+                {lang === "th" ? "ถ่ายภาพ" : "Take Photo"}
+              </span>
+              <button className="cls-camera-close" onClick={closeCamera}>✕</button>
+            </div>
+
+            <div className="cls-camera-viewfinder">
+              <video
+                ref={videoRef}
+                className="cls-camera-video"
+                autoPlay
+                playsInline
+                muted
+              />
+              {!streaming && !cameraError && (
+                <div className="cls-camera-loading">
+                  <div className="cls-spinner" />
+                  <p>{lang === "th" ? "กำลังเปิดกล้อง..." : "Opening camera..."}</p>
+                </div>
+              )}
+              {cameraError && (
+                <div className="cls-camera-loading">
+                  <p className="cls-error">{cameraError}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="cls-camera-actions">
+              <button
+                className="cls-btn-ghost"
+                onClick={closeCamera}
+              >
+                {lang === "th" ? "ยกเลิก" : "Cancel"}
+              </button>
+              <button
+                className="cls-camera-shutter"
+                onClick={capturePhoto}
+                disabled={!streaming}
+                title={lang === "th" ? "ถ่ายภาพ" : "Capture"}
+              >
+                <span className="cls-shutter-ring">
+                  <span className="cls-shutter-dot" />
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Step indicator ── */}
       <div className="cls-steps">
         {[
@@ -206,6 +313,20 @@ export default function ClassifyPage() {
               onChange={(e) => handleFile(e.target.files?.[0])}
             />
           </div>
+
+          {/* ── Camera button ── */}
+          <div className="cls-upload-divider">
+            <span>{lang === "th" ? "หรือ" : "or"}</span>
+          </div>
+          <button className="cls-btn-camera" onClick={openCamera}>
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="cls-camera-icon-sm">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+            </svg>
+            {lang === "th" ? "ถ่ายภาพ" : "Take Photo"}
+          </button>
         </div>
       )}
 

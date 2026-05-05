@@ -7,7 +7,10 @@ const API_URL     = process.env.REACT_APP_API_URL;
 const CONCURRENCY = 3;
 const COLORS = ["#ef4444","#3b82f6","#22c55e","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#f97316"];
 
-/* ─── Draw bbox client-side — สีไม่เพี้ยน ─────────────────────────────────── */
+/* ─── Fixed cell types for PDF table ────────────────────────────────────── */
+const CELL_TYPES = ["basophil", "eosinophil", "lymphocyte", "monocyte", "neutrophil"];
+
+/* ─── Draw bbox client-side ─────────────────────────────────────────────── */
 async function drawAnnotated(imgSrc, detections) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -37,7 +40,7 @@ async function drawAnnotated(imgSrc, detections) {
       });
       resolve(canvas.toDataURL("image/jpeg", 0.92));
     };
-    img.onerror = () => resolve(imgSrc); // fallback
+    img.onerror = () => resolve(imgSrc);
     img.src = imgSrc;
   });
 }
@@ -62,7 +65,7 @@ async function cropDetections(imgSrc, detections) {
   });
 }
 
-/* ─── PDF — embed base64 crops, สีไม่เพี้ยน ──────────────────────────────── */
+/* ─── PDF ─────────────────────────────────────────────────────────────────── */
 async function generatePdf(resultSlots, summary, lang) {
   const t = {
     title:   lang === "th" ? "รายงานผลการตรวจจับเซลล์" : "Cell Detection Report",
@@ -73,16 +76,16 @@ async function generatePdf(resultSlots, summary, lang) {
   };
   const date = new Date().toLocaleString(lang === "th" ? "th-TH" : "en-GB", { dateStyle: "long", timeStyle: "short" });
 
-  // รวม crops ใน memory แยกตาม label — dataUrl เป็น base64 canvas โดยตรง สีถูกต้อง
   const byClass = {};
   resultSlots.forEach(slot => {
     if (slot?.status !== "done") return;
     (slot.crops ?? []).forEach(c => {
       if (!byClass[c.label]) byClass[c.label] = [];
-      byClass[c.label].push(c.dataUrl); // canvas dataUrl — ไม่ผ่าน server
+      byClass[c.label].push(c.dataUrl);
     });
   });
 
+  /* ── แสดงทุก class ที่พบจริง (ไม่จำกัดแค่ 5 ชนิด) ใน classSections ── */
   const classSections = Object.entries(summary?.byClass ?? {})
     .sort((a,b) => b[1]-a[1])
     .map(([cls, count]) => {
@@ -100,6 +103,19 @@ async function generatePdf(resultSlots, summary, lang) {
       </div>`;
     }).join("");
 
+  /* ── ตาราง: แสดงครบ 5 ชนิด เสมอ + คอลัมน์ % ── */
+  const total = summary?.total ?? 0;
+  const tableRows = CELL_TYPES.map(cls => {
+    const n = summary?.byClass?.[cls] ?? 0;
+    const pct = total > 0 ? ((n / total) * 100).toFixed(1) : "0.0";
+    return `
+      <tr>
+        <td style="padding:6px 8px;border-bottom:1px solid #eee;text-transform:capitalize">${cls}</td>
+        <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #eee">${n}</td>
+        <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #eee">${pct}%</td>
+      </tr>`;
+  }).join("");
+
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -113,29 +129,20 @@ async function generatePdf(resultSlots, summary, lang) {
 </style></head><body>
 <h1>${t.title}</h1>
 <p class="sub">${date}</p>
-<!-- Summary Table -->
 <table style="width:100%;border-collapse:collapse;margin-bottom:1.5rem;font-size:13px">
   <thead>
     <tr>
-      <th style="text-align:left;padding:8px;border-bottom:2px solid #ddd">${lang==="th"?"ชนิดเซลล์":"Cell Type"}</th>
-      <th style="text-align:right;padding:8px;border-bottom:2px solid #ddd">${lang==="th"?"จำนวน":"Count"}</th>
+      <th style="text-align:left;padding:8px;border-bottom:2px solid #ddd">${lang==="th" ? "ชนิดเซลล์" : "Cell Type"}</th>
+      <th style="text-align:right;padding:8px;border-bottom:2px solid #ddd">${lang==="th" ? "จำนวน" : "Count"}</th>
+      <th style="text-align:right;padding:8px;border-bottom:2px solid #ddd">${lang==="th" ? "ร้อยละ (%)" : "Percent (%)"}</th>
     </tr>
   </thead>
   <tbody>
-    ${Object.entries(summary?.byClass ?? {})
-      .sort((a,b)=>b[1]-a[1])
-      .map(([cls,n]) => `
-        <tr>
-          <td style="padding:6px 8px;border-bottom:1px solid #eee">${cls}</td>
-          <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #eee">${n ?? 0}</td>
-        </tr>
-      `).join("")
-    }
+    ${tableRows}
     <tr>
-      <td style="padding:8px;font-weight:700;border-top:2px solid #ddd">${lang==="th"?"รวมทั้งหมด":"Total"}</td>
-      <td style="padding:8px;text-align:right;font-weight:700;border-top:2px solid #ddd">
-        ${(summary?.total ?? 0)}
-      </td>
+      <td style="padding:8px;font-weight:700;border-top:2px solid #ddd">${lang==="th" ? "รวมทั้งหมด" : "Total"}</td>
+      <td style="padding:8px;text-align:right;font-weight:700;border-top:2px solid #ddd">${total}</td>
+      <td style="padding:8px;text-align:right;font-weight:700;border-top:2px solid #ddd">100.0%</td>
     </tr>
   </tbody>
 </table>
@@ -193,13 +200,10 @@ function ViewByClass({ resultSlots, summary, lang }) {
         .sort((a,b)=>b[1]-a[1])
         .map(([cls, count]) => (
           <div key={cls} className="class-section">
-            
             <div className="class-section-header">
               <span className="class-section-name">{cls}</span>
               <span className="class-section-count">{count}</span>
             </div>
-
-            {/* --- NEW GRID LAYOUT --- */}
             <div className="crop-grid">
               {(allCrops[cls] ?? []).map((c, i) => (
                 <div key={i} className="crop-card">
@@ -208,7 +212,6 @@ function ViewByClass({ resultSlots, summary, lang }) {
                 </div>
               ))}
             </div>
-
           </div>
         ))}
     </div>
@@ -251,7 +254,100 @@ function ViewGallery({ resultSlots, lang }) {
   );
 }
 
+/* ─── Camera Modal ────────────────────────────────────────────────────────── */
+function CameraModal({ lang, onCapture, onClose }) {
+  const videoRef   = useRef(null);
+  const streamRef  = useRef(null);
+  const [streaming,   setStreaming]   = useState(false);
+  const [cameraError, setCameraError] = useState("");
 
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+          setStreaming(true);
+        }
+      } catch {
+        setCameraError(
+          lang === "th"
+            ? "ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้งานกล้อง"
+            : "Cannot access camera. Please allow camera permission."
+        );
+      }
+    })();
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  const capture = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const f = new File([blob], `camera_${Date.now()}.jpg`, { type: "image/jpeg" });
+      onCapture(f);
+    }, "image/jpeg", 0.92);
+  };
+
+  return (
+    <div className="cls-camera-overlay">
+      <div className="cls-camera-modal">
+        <div className="cls-camera-header">
+          <span className="cls-camera-title">
+            {lang === "th" ? "ถ่ายภาพ" : "Take Photo"}
+          </span>
+          <button className="cls-camera-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="cls-camera-viewfinder">
+          <video ref={videoRef} className="cls-camera-video" autoPlay playsInline muted />
+          {!streaming && !cameraError && (
+            <div className="cls-camera-loading">
+              <div className="cls-spinner" />
+              <p>{lang === "th" ? "กำลังเปิดกล้อง..." : "Opening camera..."}</p>
+            </div>
+          )}
+          {cameraError && (
+            <div className="cls-camera-loading">
+              <p className="cls-camera-err">{cameraError}</p>
+            </div>
+          )}
+        </div>
+        <div className="cls-camera-actions">
+          <button className="btn-ghost-sm" onClick={onClose}>
+            {lang === "th" ? "ยกเลิก" : "Cancel"}
+          </button>
+          <button
+            className="cls-camera-shutter"
+            onClick={capture}
+            disabled={!streaming}
+            title={lang === "th" ? "ถ่ายภาพ" : "Capture"}
+          >
+            <span className="cls-shutter-ring">
+              <span className="cls-shutter-dot" />
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
 export default function DetectPage({ initialBatch = null, historyId = null, onBack }) {
   const { lang } = useLang();
   const { isLoggedIn, getToken, user } = useAuth();
@@ -260,10 +356,8 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
   const buildSlotsFromHistory = useCallback(async (records) => {
     const slots = await Promise.all(records.map(async (rec) => {
       const detections = rec.detections ?? [];
-
-      // โหลดภาพต้นฉบับจาก image_path แล้ววาด bbox ใหม่ client-side
       let annotatedB64 = null;
-      let crops = rec.crops_data ?? [];  // crops จาก DB ถ้ามี
+      let crops = rec.crops_data ?? [];
 
       if (rec.image_path) {
         const imgSrc = `${API_URL}${rec.image_path}`;
@@ -276,18 +370,18 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
       }
 
       return {
-        filename:     rec.filename ?? "image",
-        status:       "done",
+        filename:    rec.filename ?? "image",
+        status:      "done",
         annotatedB64,
         detections,
         crops,
-        fromHistory:  true,
+        fromHistory: true,
       };
     }));
     return slots;
   }, []);
 
-  /* ── initial state ── */
+  /* ── state ── */
   const [step, setStep]               = useState(initialBatch ? "loading_history" : "upload");
   const [files, setFiles]             = useState([]);
   const [progress, setProgress]       = useState({ done: 0, total: 0 });
@@ -295,9 +389,10 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
   const [summary, setSummary]         = useState(null);
   const [savedMsg, setSavedMsg]       = useState("");
   const [viewMode, setViewMode]       = useState("class");
+  const [cameraOpen, setCameraOpen]   = useState(false);
   const fileInputRef = useRef(null);
 
-  /* ── โหลด history เมื่อ mount ── */
+  /* ── โหลด history ── */
   useEffect(() => {
     if (!initialBatch?.length) return;
     (async () => {
@@ -312,7 +407,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
     })();
   }, []);  // eslint-disable-line
 
-  /* ── file input ── */
+  /* ── file helpers ── */
   const handleFiles = (incoming) => {
     const valid = Array.from(incoming).filter(f => f.type.startsWith("image/"));
     setFiles(prev => [...prev, ...valid.map(f => ({
@@ -324,6 +419,21 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
   const handleDrop  = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
   const removeFile  = (id) => setFiles(prev => prev.filter(f => f.id !== id));
 
+  /* ── camera capture → วิเคราะห์ทันทีเมื่ออยู่หน้า result ── */
+  const handleCameraCapture = (file) => {
+    setCameraOpen(false);
+    const entry = {
+      id: Math.random().toString(36).slice(2),
+      file,
+      previewUrl: URL.createObjectURL(file),
+    };
+    if (step === "result" || step === "processing") {
+      handleAnalyze([entry]);
+    } else {
+      setFiles(prev => [...prev, entry]);
+    }
+  };
+
   /* ── recompute summary ── */
   const recomputeSummary = (slots) => {
     const byClass = {}; let total = 0;
@@ -334,31 +444,17 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
   };
 
   /* ── process one file ── */
-/* ── process one file ── */
   const processFile = useCallback(async ({ file, previewUrl }) => {
     const form = new FormData();
     form.append("file", file, file.name);
-
-    // ดึงข้อมูล user จาก AuthContext หรือที่เก็บไว้
-    // หากมี user.id ให้แนบไปด้วย เพื่อให้ Backend บันทึกลงตาราง history ได้ถูกต้อง
-    if (user && user.id) {
-      form.append("user_id", user.id);
-    }
+    if (user && user.id) form.append("user_id", user.id);
 
     const headers = {};
-    if (isLoggedIn) {
-      headers["Authorization"] = `Bearer ${getToken()}`;
-    }
+    if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`;
 
     try {
-      const res = await fetch(`${API_URL}/api/ai/detect`, { 
-        method: "POST", 
-        headers, 
-        body: form 
-      });
-
+      const res = await fetch(`${API_URL}/api/ai/detect`, { method: "POST", headers, body: form });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
       const data = await res.json();
       const detections = data.detections ?? [];
 
@@ -370,23 +466,12 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
         ? data.crops
         : await cropDetections(previewUrl, detections);
 
-      return { 
-        filename: file.name, 
-        status: "done", 
-        annotatedB64, 
-        detections, 
-        crops 
-      };
+      return { filename: file.name, status: "done", annotatedB64, detections, crops };
     } catch (err) {
       console.error("Processing error:", err);
-      return { 
-        filename: file.name, 
-        status: "error", 
-        detections: [], 
-        crops: [] 
-      };
+      return { filename: file.name, status: "error", detections: [], crops: [] };
     }
-  }, [isLoggedIn, getToken, user]); // เพิ่ม user เข้าไปใน dependency array
+  }, [isLoggedIn, getToken, user]);
 
   /* ── analyze ── */
   const handleAnalyze = useCallback(async (toProcess) => {
@@ -413,14 +498,13 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
     });
     setStep("result");
 
-    // save ลง DB — ส่ง detections เพื่อให้ backend บันทึก
     if (isLoggedIn) {
       try {
         const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` };
         await fetch(`${API_URL}/api/ai/history`, {
           method: "POST", headers, credentials: "include",
           body: JSON.stringify({
-            history_id: historyId ?? null, // ถ้ามา append จาก history ส่ง id ไปด้วย
+            history_id: historyId ?? null,
             images: newResults.map(r => ({ filename: r.filename, detections: r.detections })),
           }),
         });
@@ -467,6 +551,15 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
   return (
     <div className="batch-wrapper">
 
+      {/* Camera Modal */}
+      {cameraOpen && (
+        <CameraModal
+          lang={lang}
+          onCapture={handleCameraCapture}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
+
       {/* Back button */}
       {onBack && (
         <button className="btn-back" onClick={onBack}>
@@ -496,6 +589,21 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
             <input ref={fileInputRef} type="file" accept="image/*" multiple style={{display:"none"}}
               onChange={e=>handleFiles(e.target.files)}/>
           </div>
+
+          {/* ── Camera button ── */}
+          <div className="cls-upload-divider">
+            <span>{lang === "th" ? "หรือ" : "or"}</span>
+          </div>
+          <button className="cls-btn-camera" onClick={() => setCameraOpen(true)}>
+            <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="cls-camera-icon-sm">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+            </svg>
+            {lang === "th" ? "ถ่ายภาพ" : "Take Photo"}
+          </button>
+
           {files.length > 0 && (
             <>
               <div className="batch-selected-header">
@@ -575,6 +683,17 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
                   <input type="file" accept="image/*" multiple style={{display:"none"}}
                     onChange={e=>handleAddMore(e.target.files)}/>
                 </label>
+                {/* ── Camera button in result sidebar ── */}
+                <button onClick={() => setCameraOpen(true)} className="btn-action">
+                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8"
+                    style={{width:"14px",height:"14px",display:"inline",verticalAlign:"middle",marginRight:"5px"}}>
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
+                  </svg>
+                  {lang === "th" ? "ถ่ายภาพเพิ่ม" : "Take photo"}
+                </button>
                 <button onClick={() => generatePdf(resultSlots, displaySummary, lang)} className="btn-action">
                   {lang==="th" ? "ดาวน์โหลด PDF" : "Download PDF"}
                 </button>

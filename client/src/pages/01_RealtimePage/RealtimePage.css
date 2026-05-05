@@ -3,12 +3,13 @@
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 0.5rem;
-  padding: 0.75rem;
+  padding: 2rem;
   min-height: calc(120vh - 60px);
   background: transparent;
   align-items: start;
   box-sizing: border-box;
   margin: 0 auto;
+  max-width: 900px;
 }
 
 /* ── Camera Side ── */
@@ -44,6 +45,16 @@
 }
 
 /* Placeholder */
+.aspect-box {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 16 / 9;
+  background: #f0f0f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
 .rt-placeholder {
   position: absolute;
   inset: 0;
@@ -54,6 +65,7 @@
   gap: 10px;
   color: #555;
 }
+
 .rt-placeholder svg { width: 48px; height: 48px; stroke: #555; }
 .rt-placeholder p   { font-size: 13px; margin: 0; }
 
@@ -215,6 +227,7 @@
 /* ── Mobile ── */
 @media (max-width: 640px) {
   .rt-wrapper {
+    padding: 0rem;
     display: grid;
     grid-template-rows: 0.5fr 1fr;
     grid-template-columns: 1fr;
@@ -234,9 +247,4 @@
     padding: 7px 12px;
     font-size: 12px;
   }
-}
-
-@keyframes hp-fade-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
 }
