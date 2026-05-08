@@ -68,10 +68,9 @@ async function cropDetections(imgSrc, detections) {
 /* ─── PDF ─────────────────────────────────────────────────────────────────── */
 async function generatePdf(resultSlots, summary, lang) {
   const t = {
-    title:   lang === "th" ? "รายงานผลการตรวจจับเซลล์" : "Cell Detection Report",
+    title:   lang === "th" ? "รายงานผลการวิเคราะห์เซลล์" : "Cell Analysis Report",
     cells:   lang === "th" ? "เซลล์" : "cells",
     summary: lang === "th" ? "สรุปแต่ละชนิด" : "Summary by cell type",
-    samples: lang === "th" ? "ตัวอย่างเซลล์" : "Cell samples",
     images:  lang === "th" ? "ภาพ" : "images",
   };
   const date = new Date().toLocaleString(lang === "th" ? "th-TH" : "en-GB", { dateStyle: "long", timeStyle: "short" });
@@ -98,7 +97,7 @@ async function generatePdf(resultSlots, summary, lang) {
           <span style="font-size:14px;font-weight:700;color:#111">${cls}</span>
           <span style="background:#eef2ff;color:#4f7df3;padding:2px 12px;border-radius:20px;font-size:13px;font-weight:700">${count} ${t.cells}</span>
         </div>
-        <div style="font-size:11px;color:#9ca3af;margin-bottom:0.4rem">${t.samples} (${(byClass[cls]??[]).length})</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:0.4rem">(${(byClass[cls]??[]).length})</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px">${imgs}</div>
       </div>`;
     }).join("");

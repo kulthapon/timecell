@@ -36,7 +36,7 @@ async def ws_detect(ws: WebSocket):
                 conf = float(box.conf)
                 
                 # กรองเฉพาะค่าความมั่นใจที่สูงพอ (เช่น > 0.25) เพื่อลดขยะใน JSON
-                if conf > 0.25:
+                if conf > 0.1:
                     detections.append({
                         "label": result.names[int(box.cls)],
                         "confidence": round(conf, 2),

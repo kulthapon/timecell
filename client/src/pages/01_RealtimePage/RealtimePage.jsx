@@ -4,9 +4,9 @@ import "./RealtimePage.css";
 
 export const WS_URL = process.env.REACT_APP_WS_URL;
 
-const TARGET_FPS = 20;
+const TARGET_FPS = 40;
 const FRAME_MS = 1000 / TARGET_FPS;
-const MAX_INFLIGHT = 3;
+const MAX_INFLIGHT = 10;
 
 export default function RealtimePage() {
   const { lang } = useLang();
