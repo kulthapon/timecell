@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLang } from "../../context/LangContext";
 import { useAuth } from "../../context/AuthContext";
-import { uploadPdfHistory } from "../../utils/pdfHistory";
+import { uploadPdfHistory } from "../../context/HistoryContext";
 import "./DetectPage.css";
 
 const API_URL     = process.env.REACT_APP_API_URL;
