@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
  
 -- PDF History ───────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS pdf_history (
+CREATE TABLE IF NOT EXISTS history (
   id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_id    INT NOT NULL,
   file_path  VARCHAR(500) NOT NULL,

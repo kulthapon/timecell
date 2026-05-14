@@ -1,9 +1,9 @@
 """
 routers/detect.py — Detection endpoints.
 """
-from fastapi import APIRouter, File, HTTPException, UploadFile, Form
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
-from typing import Optional, List
+from typing import List
 
 from config import MAX_UPLOAD_MB
 from image_utils import pil_from_bytes
@@ -12,14 +12,10 @@ from ml.pipeline import process_single_image
 
 router = APIRouter()
 
+
 @router.post("/detect")
-async def detect(
-    files: List[UploadFile] = File(...),
-    user_id: Optional[int] = Form(None) # เพิ่มการรับ user_id
-):
-    """
-    Detect cells in one or more images.
-    """
+async def detect(files: List[UploadFile] = File(...)):
+    """Detect cells in one or more images."""
     if yolo_model is None:
         return JSONResponse({"error": "YOLO model not loaded"}, status_code=503)
 
@@ -27,10 +23,7 @@ async def detect(
     for file in files:
         contents = await file.read()
         image    = pil_from_bytes(contents)
-        
-        # ส่ง user_id เข้าไปเพื่อให้ระบบบันทึกประวัติได้ถูกคน (หรือเป็น NULL ถ้าไม่มี)
-        # หมายเหตุ: คุณต้องไปเพิ่ม parameter 'user_id' ในฟังก์ชัน process_single_image ด้วย
-        result   = process_single_image(image, file.filename, user_id=user_id)
+        result   = process_single_image(image, file.filename)
         all_results.append(result)
 
     if len(all_results) == 1:
@@ -40,13 +33,8 @@ async def detect(
 
 
 @router.post("/api/ai/detect")
-async def detect_single(
-    file: UploadFile = File(...),
-    user_id: Optional[int] = Form(None) # เพิ่มการรับ user_id
-):
-    """
-    Single-file detect endpoint — used by BatchDetectPage.jsx.
-    """
+async def detect_single(file: UploadFile = File(...)):
+    """Single-file detect endpoint — used by DetectPage.jsx."""
     if yolo_model is None:
         raise HTTPException(status_code=503, detail="YOLO model not loaded")
 
@@ -61,7 +49,5 @@ async def detect_single(
         )
 
     image  = pil_from_bytes(contents)
-    
-    # ส่ง user_id เข้าไปที่ pipeline
-    result = process_single_image(image, file.filename, user_id=user_id)
+    result = process_single_image(image, file.filename)
     return JSONResponse(result)

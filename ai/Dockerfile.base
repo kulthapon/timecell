@@ -1,15 +1,27 @@
-FROM python:3.10-slim
-
-WORKDIR /app
-
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+ 
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ 
+# ── System deps ───────────────────────────────────────────────────────────────
 RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
     libgl1 \
     libglib2.0-0 \
     libxcb1 \
     libxext6 \
     libx11-6 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
-
+ 
+RUN ln -sf /usr/bin/python3.10 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3    /usr/bin/python  && \
+    pip install --upgrade pip
+ 
+WORKDIR /app
+ 
+# ── Python deps ─────────────────────────────
 COPY requirements.txt .
-RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt

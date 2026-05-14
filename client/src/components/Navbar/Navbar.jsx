@@ -160,23 +160,23 @@ export default function Navbar() {
       <div className="sb-divider" />
 
       <div className="sb-bottom">
-        {/* <div className="sb-controls">
+        <div className="sb-controls">
           <button onClick={() => changeLang(lang === "th" ? "en" : "th")} className="sb-ctrl-btn">
             {lang === "th" ? "EN" : "TH"}
           </button>
           <button onClick={toggleTheme} className="sb-ctrl-btn">
             {theme === "light" ? "🌙" : "☀️"}
           </button>
-        </div> */}
+        </div>
 
         {isLoggedIn ? (
           <>
-            {/* <Link to="/profile" className="sb-user"> */}
+            <Link to="/profile" className="sb-user">
               <div className="sb-user-info">
                 <span className="sb-user-name">{user?.firstname} {user?.lastname}</span>
                 <span className="sb-user-email">{user?.email}</span>
               </div>
-            {/* </Link> */}
+            </Link>
 
             <button onClick={handleLogout} className="sb-logout-btn">
               <span className="sb-label">{lang === "th" ? "ออกจากระบบ" : "Logout"}</span>

@@ -1,16 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLang } from "../../context/LangContext";
 import { useAuth } from "../../context/AuthContext";
+import { uploadPdfHistory } from "../../utils/pdfHistory";
 import "./DetectPage.css";
 
 const API_URL     = process.env.REACT_APP_API_URL;
 const CONCURRENCY = 3;
 const COLORS = ["#ef4444","#3b82f6","#22c55e","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#f97316"];
+const CELL_TYPES  = ["basophil", "eosinophil", "lymphocyte", "monocyte", "neutrophil"];
 
-/* ─── Fixed cell types for PDF table ────────────────────────────────────── */
-const CELL_TYPES = ["basophil", "eosinophil", "lymphocyte", "monocyte", "neutrophil"];
-
-/* ─── Draw bbox client-side ─────────────────────────────────────────────── */
+/* ─── Draw bbox ──────────────────────────────────────────────────────────── */
 async function drawAnnotated(imgSrc, detections) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -45,7 +44,7 @@ async function drawAnnotated(imgSrc, detections) {
   });
 }
 
-/* ─── Crop helper ─────────────────────────────────────────────────────────── */
+/* ─── Crop helper ────────────────────────────────────────────────────────── */
 async function cropDetections(imgSrc, detections) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -65,15 +64,17 @@ async function cropDetections(imgSrc, detections) {
   });
 }
 
-/* ─── PDF ─────────────────────────────────────────────────────────────────── */
-async function generatePdf(resultSlots, summary, lang) {
+/* ─── Build PDF HTML ─────────────────────────────────────────────────────── */
+function buildPdfHtml(resultSlots, summary, lang) {
   const t = {
     title:   lang === "th" ? "รายงานผลการวิเคราะห์เซลล์" : "Cell Analysis Report",
     cells:   lang === "th" ? "เซลล์" : "cells",
     summary: lang === "th" ? "สรุปแต่ละชนิด" : "Summary by cell type",
-    images:  lang === "th" ? "ภาพ" : "images",
   };
-  const date = new Date().toLocaleString(lang === "th" ? "th-TH" : "en-GB", { dateStyle: "long", timeStyle: "short" });
+  const date = new Date().toLocaleString(
+    lang === "th" ? "th-TH" : "en-GB",
+    { dateStyle: "long", timeStyle: "short" }
+  );
 
   const byClass = {};
   resultSlots.forEach(slot => {
@@ -84,7 +85,6 @@ async function generatePdf(resultSlots, summary, lang) {
     });
   });
 
-  /* ── แสดงทุก class ที่พบจริง (ไม่จำกัดแค่ 5 ชนิด) ใน classSections ── */
   const classSections = Object.entries(summary?.byClass ?? {})
     .sort((a,b) => b[1]-a[1])
     .map(([cls, count]) => {
@@ -97,15 +97,14 @@ async function generatePdf(resultSlots, summary, lang) {
           <span style="font-size:14px;font-weight:700;color:#111">${cls}</span>
           <span style="background:#eef2ff;color:#4f7df3;padding:2px 12px;border-radius:20px;font-size:13px;font-weight:700">${count} ${t.cells}</span>
         </div>
-        <div style="font-size:11px;color:#9ca3af;margin-bottom:0.4rem">(${(byClass[cls]??[]).length})</div>
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:0.4rem">(${(byClass[cls]??[]).length} crops)</div>
         <div style="display:flex;flex-wrap:wrap;gap:5px">${imgs}</div>
       </div>`;
     }).join("");
 
-  /* ── ตาราง: แสดงครบ 5 ชนิด เสมอ + คอลัมน์ % ── */
   const total = summary?.total ?? 0;
   const tableRows = CELL_TYPES.map(cls => {
-    const n = summary?.byClass?.[cls] ?? 0;
+    const n   = summary?.byClass?.[cls] ?? 0;
     const pct = total > 0 ? ((n / total) * 100).toFixed(1) : "0.0";
     return `
       <tr>
@@ -115,31 +114,27 @@ async function generatePdf(resultSlots, summary, lang) {
       </tr>`;
   }).join("");
 
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:sans-serif;color:#1a1a1a;padding:2.5rem;font-size:13px}
   h1{font-size:20px;font-weight:800;margin-bottom:4px}
   .sub{color:#9ca3af;margin-bottom:1.5rem;font-size:12px}
-  .stats{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
-  .stat{background:#f3f4f6;padding:6px 16px;border-radius:8px;font-weight:700;font-size:13px}
   h2{font-size:14px;font-weight:700;margin:0 0 0.75rem;color:#374151;text-transform:uppercase;letter-spacing:.05em}
   @media print{body{padding:1rem}div{break-inside:avoid}}
 </style></head><body>
 <h1>${t.title}</h1>
 <p class="sub">${date}</p>
 <table style="width:100%;border-collapse:collapse;margin-bottom:1.5rem;font-size:13px">
-  <thead>
-    <tr>
-      <th style="text-align:left;padding:8px;border-bottom:2px solid #ddd">${lang==="th" ? "ชนิดเซลล์" : "Cell Type"}</th>
-      <th style="text-align:right;padding:8px;border-bottom:2px solid #ddd">${lang==="th" ? "จำนวน" : "Count"}</th>
-      <th style="text-align:right;padding:8px;border-bottom:2px solid #ddd">${lang==="th" ? "ร้อยละ (%)" : "Percent (%)"}</th>
-    </tr>
-  </thead>
+  <thead><tr>
+    <th style="text-align:left;padding:8px;border-bottom:2px solid #ddd">${lang==="th"?"ชนิดเซลล์":"Cell Type"}</th>
+    <th style="text-align:right;padding:8px;border-bottom:2px solid #ddd">${lang==="th"?"จำนวน":"Count"}</th>
+    <th style="text-align:right;padding:8px;border-bottom:2px solid #ddd">${lang==="th"?"ร้อยละ (%)":"Percent (%)"}</th>
+  </tr></thead>
   <tbody>
     ${tableRows}
     <tr>
-      <td style="padding:8px;font-weight:700;border-top:2px solid #ddd">${lang==="th" ? "รวมทั้งหมด" : "Total"}</td>
+      <td style="padding:8px;font-weight:700;border-top:2px solid #ddd">${lang==="th"?"รวมทั้งหมด":"Total"}</td>
       <td style="padding:8px;text-align:right;font-weight:700;border-top:2px solid #ddd">${total}</td>
       <td style="padding:8px;text-align:right;font-weight:700;border-top:2px solid #ddd">100.0%</td>
     </tr>
@@ -148,7 +143,11 @@ async function generatePdf(resultSlots, summary, lang) {
 <h2>${t.summary}</h2>
 ${classSections}
 </body></html>`;
+}
 
+/* ─── Generate PDF (print popup) ─────────────────────────────────────────── */
+async function generatePdf(resultSlots, summary, lang) {
+  const html = buildPdfHtml(resultSlots, summary, lang);
   const w = window.open("", "_blank");
   if (!w) { alert("Pop-up blocked — please allow pop-ups"); return; }
   w.document.write(html);
@@ -156,7 +155,7 @@ ${classSections}
   setTimeout(() => { w.focus(); w.print(); }, 700);
 }
 
-/* ─── Concurrency ─────────────────────────────────────────────────────────── */
+/* ─── Concurrency ────────────────────────────────────────────────────────── */
 async function pooledMap(items, fn, n) {
   const results = new Array(items.length); let next = 0;
   async function worker() {
@@ -166,7 +165,16 @@ async function pooledMap(items, fn, n) {
   return results;
 }
 
-/* ─── Skeleton ────────────────────────────────────────────────────────────── */
+/* ─── recompute summary ──────────────────────────────────────────────────── */
+function recomputeSummary(slots) {
+  const byClass = {}; let total = 0;
+  slots.forEach(r => (r?.detections ?? []).forEach(d => {
+    byClass[d.label] = (byClass[d.label] ?? 0) + 1; total++;
+  }));
+  return { total, byClass };
+}
+
+/* ─── Skeleton ───────────────────────────────────────────────────────────── */
 function SkeletonCard({ filename }) {
   return (
     <div className="result-img-card skeleton-card">
@@ -177,11 +185,10 @@ function SkeletonCard({ filename }) {
   );
 }
 
-/* ─── View A: By Cell Type ────────────────────────────────────────────────── */
+/* ─── View A: By Cell Type ───────────────────────────────────────────────── */
 function ViewByClass({ resultSlots, summary, lang }) {
-  const byClass = summary?.byClass ?? {};
+  const byClass  = summary?.byClass ?? {};
   const allCrops = {};
-
   resultSlots.forEach(slot => {
     if (slot?.status !== "done") return;
     (slot.crops ?? []).forEach(c => {
@@ -189,43 +196,42 @@ function ViewByClass({ resultSlots, summary, lang }) {
       allCrops[c.label].push(c);
     });
   });
-
   if (!Object.keys(byClass).length)
     return <p className="rt-empty">{lang === "th" ? "ยังไม่มีผล" : "No results yet"}</p>;
-
   return (
     <div className="view-byclass">
-      {Object.entries(byClass)
-        .sort((a,b)=>b[1]-a[1])
-        .map(([cls, count]) => (
-          <div key={cls} className="class-section">
-            <div className="class-section-header">
-              <span className="class-section-name">{cls}</span>
-              <span className="class-section-count">{count}</span>
-            </div>
-            <div className="crop-grid">
-              {(allCrops[cls] ?? []).map((c, i) => (
-                <div key={i} className="crop-card">
-                  <img src={c.dataUrl} alt={cls} />
-                  <div className="crop-label">{cls}</div>
-                </div>
-              ))}
-            </div>
+      {Object.entries(byClass).sort((a,b) => b[1]-a[1]).map(([cls, count]) => (
+        <div key={cls} className="class-section">
+          <div className="class-section-header">
+            <span className="class-section-name">{cls}</span>
+            <span className="class-section-count">{count}</span>
           </div>
-        ))}
+          <div className="crop-grid">
+            {(allCrops[cls] ?? []).map((c, i) => (
+              <div key={i} className="crop-card">
+                <img src={c.dataUrl} alt={cls}/>
+                <div className="crop-label">{cls}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-/* ─── View B: Gallery ─────────────────────────────────────────────────────── */
-function ViewGallery({ resultSlots, lang }) {
+/* ─── View B: Gallery ────────────────────────────────────────────────────── */
+function ViewGallery({ resultSlots, lang, onRemoveSlot }) {
   const done = resultSlots.filter(s => s?.status === "done");
   const [idx, setIdx] = useState(0);
   useEffect(() => {
-    if (idx >= done.length && done.length > 0) setIdx(done.length-1);
+    if (idx >= done.length && done.length > 0) setIdx(done.length - 1);
   }, [done.length]);
   if (!done.length) return null;
-  const cur = done[Math.min(idx, done.length-1)];
+  const safeIdx = Math.min(idx, done.length - 1);
+  const cur     = done[safeIdx];
+  const realIdx = resultSlots.indexOf(cur);
+  const handleRemove = () => { onRemoveSlot(realIdx); setIdx(i => Math.max(0, i-1)); };
   return (
     <div className="view-gallery">
       <div className="gallery-img-wrap">
@@ -233,18 +239,25 @@ function ViewGallery({ resultSlots, lang }) {
           ? <img src={cur.annotatedB64} alt={cur.filename} className="gallery-img"/>
           : <div className="fail-box">{lang === "th" ? "ไม่มีภาพ" : "No image"}</div>}
         <button className="gallery-arrow gallery-arrow--left"
-          onClick={() => setIdx(i=>Math.max(0,i-1))} disabled={idx===0}>‹</button>
+          onClick={() => setIdx(i => Math.max(0,i-1))} disabled={idx===0}>‹</button>
         <button className="gallery-arrow gallery-arrow--right"
-          onClick={() => setIdx(i=>Math.min(done.length-1,i+1))} disabled={idx>=done.length-1}>›</button>
-        <div className="gallery-counter">{Math.min(idx,done.length-1)+1} / {done.length}</div>
+          onClick={() => setIdx(i => Math.min(done.length-1,i+1))} disabled={idx>=done.length-1}>›</button>
+        <div className="gallery-counter">{safeIdx+1} / {done.length}</div>
         <div className="gallery-filename">{cur.filename}</div>
+        <button className="gallery-remove-btn" onClick={handleRemove}
+          title={lang === "th" ? "ลบรูปนี้" : "Remove this image"}>
+          <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" style={{width:14,height:14}}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+          </svg>
+          {lang === "th" ? "ลบรูปนี้" : "Remove"}
+        </button>
       </div>
       {cur.crops?.length > 0 && (
         <div className="gallery-crops">
           {cur.crops.map((c,i) => (
             <div key={i} className="gallery-crop-item">
-              <img src={c.dataUrl} alt={c.label}/>
-              <span>{c.label}</span>
+              <img src={c.dataUrl} alt={c.label}/><span>{c.label}</span>
             </div>
           ))}
         </div>
@@ -253,92 +266,58 @@ function ViewGallery({ resultSlots, lang }) {
   );
 }
 
-/* ─── Camera Modal ────────────────────────────────────────────────────────── */
+/* ─── Camera Modal ───────────────────────────────────────────────────────── */
 function CameraModal({ lang, onCapture, onClose }) {
-  const videoRef   = useRef(null);
-  const streamRef  = useRef(null);
+  const videoRef  = useRef(null);
+  const streamRef = useRef(null);
   const [streaming,   setStreaming]   = useState(false);
   const [cameraError, setCameraError] = useState("");
-
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-          audio: false,
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
         if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-          setStreaming(true);
-        }
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); setStreaming(true); }
       } catch {
-        setCameraError(
-          lang === "th"
-            ? "ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้งานกล้อง"
-            : "Cannot access camera. Please allow camera permission."
-        );
+        setCameraError(lang === "th"
+          ? "ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้งานกล้อง"
+          : "Cannot access camera. Please allow camera permission.");
       }
     })();
-    return () => {
-      active = false;
-      streamRef.current?.getTracks().forEach(t => t.stop());
-    };
+    return () => { active = false; streamRef.current?.getTracks().forEach(t => t.stop()); };
   }, []);
-
   const capture = () => {
-    const video = videoRef.current;
-    if (!video) return;
+    const video = videoRef.current; if (!video) return;
     const canvas = document.createElement("canvas");
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
+    canvas.toBlob(blob => {
       if (!blob) return;
-      const f = new File([blob], `camera_${Date.now()}.jpg`, { type: "image/jpeg" });
-      onCapture(f);
+      onCapture(new File([blob], `camera_${Date.now()}.jpg`, { type: "image/jpeg" }));
     }, "image/jpeg", 0.92);
   };
-
   return (
     <div className="cls-camera-overlay">
       <div className="cls-camera-modal">
         <div className="cls-camera-header">
-          <span className="cls-camera-title">
-            {lang === "th" ? "ถ่ายภาพ" : "Take Photo"}
-          </span>
+          <span className="cls-camera-title">{lang === "th" ? "ถ่ายภาพ" : "Take Photo"}</span>
           <button className="cls-camera-close" onClick={onClose}>✕</button>
         </div>
         <div className="cls-camera-viewfinder">
           <video ref={videoRef} className="cls-camera-video" autoPlay playsInline muted />
           {!streaming && !cameraError && (
-            <div className="cls-camera-loading">
-              <div className="cls-spinner" />
+            <div className="cls-camera-loading"><div className="cls-spinner"/>
               <p>{lang === "th" ? "กำลังเปิดกล้อง..." : "Opening camera..."}</p>
             </div>
           )}
-          {cameraError && (
-            <div className="cls-camera-loading">
-              <p className="cls-camera-err">{cameraError}</p>
-            </div>
-          )}
+          {cameraError && <div className="cls-camera-loading"><p className="cls-camera-err">{cameraError}</p></div>}
         </div>
         <div className="cls-camera-actions">
-          <button className="btn-ghost-sm" onClick={onClose}>
-            {lang === "th" ? "ยกเลิก" : "Cancel"}
-          </button>
-          <button
-            className="cls-camera-shutter"
-            onClick={capture}
-            disabled={!streaming}
-            title={lang === "th" ? "ถ่ายภาพ" : "Capture"}
-          >
-            <span className="cls-shutter-ring">
-              <span className="cls-shutter-dot" />
-            </span>
+          <button className="btn-ghost-sm" onClick={onClose}>{lang === "th" ? "ยกเลิก" : "Cancel"}</button>
+          <button className="cls-camera-shutter" onClick={capture} disabled={!streaming}>
+            <span className="cls-shutter-ring"><span className="cls-shutter-dot"/></span>
           </button>
         </div>
       </div>
@@ -348,169 +327,119 @@ function CameraModal({ lang, onCapture, onClose }) {
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 export default function DetectPage({ initialBatch = null, historyId = null, onBack }) {
-  const { lang } = useLang();
-  const { isLoggedIn, getToken, user } = useAuth();
+  const { lang }                    = useLang();
+  const { isLoggedIn, getToken }    = useAuth();
 
-  /* ── แปลง history records → slots ── */
-  const buildSlotsFromHistory = useCallback(async (records) => {
-    const slots = await Promise.all(records.map(async (rec) => {
-      const detections = rec.detections ?? [];
-      let annotatedB64 = null;
-      let crops = rec.crops_data ?? [];
-
-      if (rec.image_path) {
-        const imgSrc = `${API_URL}${rec.image_path}`;
-        try {
-          if (detections.length > 0) {
-            annotatedB64 = await drawAnnotated(imgSrc, detections);
-            if (!crops.length) crops = await cropDetections(imgSrc, detections);
-          }
-        } catch {}
-      }
-
-      return {
-        filename:    rec.filename ?? "image",
-        status:      "done",
-        annotatedB64,
-        detections,
-        crops,
-        fromHistory: true,
-      };
-    }));
-    return slots;
-  }, []);
-
-  /* ── state ── */
   const [step, setStep]               = useState(initialBatch ? "loading_history" : "upload");
   const [files, setFiles]             = useState([]);
   const [progress, setProgress]       = useState({ done: 0, total: 0 });
   const [resultSlots, setResultSlots] = useState([]);
   const [summary, setSummary]         = useState(null);
-  const [savedMsg, setSavedMsg]       = useState("");
   const [viewMode, setViewMode]       = useState("class");
   const [cameraOpen, setCameraOpen]   = useState(false);
+  const [savedMsg, setSavedMsg]       = useState("");
   const fileInputRef = useRef(null);
 
-  /* ── โหลด history ── */
+  /* ── โหลด history (lightweight — แค่ detections ไม่มีรูป) ── */
   useEffect(() => {
     if (!initialBatch?.length) return;
-    (async () => {
-      const slots = await buildSlotsFromHistory(initialBatch);
-      const byClass = {}; let total = 0;
-      slots.forEach(s => (s.detections??[]).forEach(d => {
-        byClass[d.label] = (byClass[d.label]??0)+1; total++;
-      }));
-      setResultSlots(slots);
-      setSummary({ total, byClass });
-      setStep("result");
-    })();
-  }, []);  // eslint-disable-line
+    const slots = initialBatch.map(rec => ({
+      filename:    rec.filename ?? "image",
+      status:      "done",
+      annotatedB64: null,
+      detections:  rec.detections ?? [],
+      crops:       [],
+      fromHistory: true,
+    }));
+    setSummary(recomputeSummary(slots));
+    setResultSlots(slots);
+    setStep("result");
+  }, []); // eslint-disable-line
+
+  /* ── ลบ slot + recalculate ── */
+  const handleRemoveSlot = useCallback((slotIdx) => {
+    setResultSlots(prev => {
+      const next = prev.filter((_, i) => i !== slotIdx);
+      setSummary(recomputeSummary(next));
+      if (next.filter(s => s?.status === "done").length === 0) setStep("upload");
+      return next;
+    });
+  }, []);
 
   /* ── file helpers ── */
   const handleFiles = (incoming) => {
     const valid = Array.from(incoming).filter(f => f.type.startsWith("image/"));
     setFiles(prev => [...prev, ...valid.map(f => ({
-      id: Math.random().toString(36).slice(2),
-      file: f,
-      previewUrl: URL.createObjectURL(f),
+      id: Math.random().toString(36).slice(2), file: f, previewUrl: URL.createObjectURL(f),
     }))]);
   };
-  const handleDrop  = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
-  const removeFile  = (id) => setFiles(prev => prev.filter(f => f.id !== id));
+  const handleDrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
+  const removeFile = (id) => setFiles(prev => prev.filter(f => f.id !== id));
 
-  /* ── camera capture → วิเคราะห์ทันทีเมื่ออยู่หน้า result ── */
   const handleCameraCapture = (file) => {
     setCameraOpen(false);
-    const entry = {
-      id: Math.random().toString(36).slice(2),
-      file,
-      previewUrl: URL.createObjectURL(file),
-    };
-    if (step === "result" || step === "processing") {
-      handleAnalyze([entry]);
-    } else {
-      setFiles(prev => [...prev, entry]);
-    }
-  };
-
-  /* ── recompute summary ── */
-  const recomputeSummary = (slots) => {
-    const byClass = {}; let total = 0;
-    slots.forEach(r => (r?.detections??[]).forEach(d => {
-      byClass[d.label] = (byClass[d.label]??0)+1; total++;
-    }));
-    return { total, byClass };
+    const entry = { id: Math.random().toString(36).slice(2), file, previewUrl: URL.createObjectURL(file) };
+    if (step === "result" || step === "processing") handleAnalyze([entry]);
+    else setFiles(prev => [...prev, entry]);
   };
 
   /* ── process one file ── */
   const processFile = useCallback(async ({ file, previewUrl }) => {
     const form = new FormData();
     form.append("file", file, file.name);
-    if (user && user.id) form.append("user_id", user.id);
-
     const headers = {};
     if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`;
-
     try {
       const res = await fetch(`${API_URL}/api/ai/detect`, { method: "POST", headers, body: form });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data       = await res.json();
       const detections = data.detections ?? [];
-
       const annotatedB64 = detections.length > 0
-        ? await drawAnnotated(previewUrl, detections)
-        : previewUrl;
-
-      const crops = data.crops?.length
-        ? data.crops
-        : await cropDetections(previewUrl, detections);
-
+        ? await drawAnnotated(previewUrl, detections) : previewUrl;
+      const crops = data.crops?.length ? data.crops : await cropDetections(previewUrl, detections);
       return { filename: file.name, status: "done", annotatedB64, detections, crops };
     } catch (err) {
       console.error("Processing error:", err);
       return { filename: file.name, status: "error", detections: [], crops: [] };
     }
-  }, [isLoggedIn, getToken, user]);
+  }, [isLoggedIn, getToken]);
 
   /* ── analyze ── */
   const handleAnalyze = useCallback(async (toProcess) => {
     if (!toProcess?.length) return;
     const startIdx = resultSlots.length;
-    const newSlots = toProcess.map(f => ({ filename: f.file.name, status: "loading" }));
-    setResultSlots(prev => [...prev, ...newSlots]);
+    setResultSlots(prev => [...prev, ...toProcess.map(f => ({ filename: f.file.name, status: "loading" }))]);
     setStep("processing");
     setProgress({ done: 0, total: toProcess.length });
     setSavedMsg("");
 
-    const newResults = new Array(toProcess.length);
     await pooledMap(toProcess, async (fe, i) => {
       const slot = await processFile(fe);
-      newResults[i] = slot;
-      setResultSlots(prev => { const n=[...prev]; n[startIdx+i]=slot; return n; });
+      setResultSlots(prev => {
+        const n = [...prev]; n[startIdx+i] = slot;
+        setSummary(recomputeSummary(n));
+        return n;
+      });
       setProgress(prev => ({ ...prev, done: prev.done+1 }));
     }, CONCURRENCY);
 
-    setResultSlots(prev => {
-      const all = [...prev];
-      setSummary(recomputeSummary(all));
-      return all;
-    });
     setStep("result");
 
+    // ── บันทึก PDF ขึ้น server (เฉพาะ logged in) ──
     if (isLoggedIn) {
-      try {
-        const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` };
-        await fetch(`${API_URL}/api/ai/history`, {
-          method: "POST", headers, credentials: "include",
-          body: JSON.stringify({
-            history_id: historyId ?? null,
-            images: newResults.map(r => ({ filename: r.filename, detections: r.detections })),
-          }),
-        });
-        setSavedMsg(lang === "th" ? "บันทึกแล้ว" : "Saved");
-      } catch {}
+      setResultSlots(prev => {
+        const all     = [...prev];
+        const newSum  = recomputeSummary(all);
+        const html    = buildPdfHtml(all, newSum, lang);
+        const imgCount = all.filter(s => s?.status === "done").length;
+        uploadPdfHistory(html)
+          .then(rec => {
+            if (rec) setSavedMsg(lang === "th" ? "บันทึกแล้ว ✓" : "Saved ✓");
+          });
+        return all;
+      });
     }
-  }, [resultSlots, processFile, isLoggedIn, getToken, lang, historyId]);
+  }, [resultSlots, processFile, isLoggedIn, getToken, lang]);
 
   const handleStartAnalyze = () => handleAnalyze(files);
   const handleAddMore = (incoming) => {
@@ -532,41 +461,24 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
     setStep("upload"); setFiles([]); setResultSlots([]); setSummary(null); setSavedMsg("");
   };
 
-  /* ── computed ── */
   const isProcessing   = step === "processing";
   const isLoadingHist  = step === "loading_history";
   const doneSoFar      = resultSlots.filter(s => s?.status === "done").length;
   const totalSlots     = resultSlots.length;
   const pct            = progress.total > 0 ? Math.round((progress.done/progress.total)*100) : 0;
-  const liveSummary    = (() => {
-    const byClass={}; let total=0;
-    resultSlots.forEach(r => { if (r?.status!=="done") return; (r.detections??[]).forEach(d => { byClass[d.label]=(byClass[d.label]??0)+1; total++; }); });
-    return { total, byClass };
-  })();
-  const displaySummary = summary ?? liveSummary;
+  const displaySummary = summary ?? recomputeSummary(resultSlots);
   const showLayout     = isProcessing || step === "result";
 
-  /* ═══════════ Render ═══════════ */
   return (
     <div className="batch-wrapper">
+      {cameraOpen && <CameraModal lang={lang} onCapture={handleCameraCapture} onClose={() => setCameraOpen(false)}/>}
 
-      {/* Camera Modal */}
-      {cameraOpen && (
-        <CameraModal
-          lang={lang}
-          onCapture={handleCameraCapture}
-          onClose={() => setCameraOpen(false)}
-        />
-      )}
-
-      {/* Back button */}
       {onBack && (
         <button className="btn-back" onClick={onBack}>
           ← {lang === "th" ? "กลับประวัติ" : "Back to history"}
         </button>
       )}
 
-      {/* Loading history spinner */}
       {isLoadingHist && (
         <div className="batch-processing">
           <div className="proc-spinner"/>
@@ -574,11 +486,11 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
         </div>
       )}
 
-      {/* Upload */}
+      {/* ── Upload ── */}
       {step === "upload" && (
         <div className="batch-upload-layout">
           <div className="batch-dropzone"
-            onDrop={handleDrop} onDragOver={e=>e.preventDefault()}
+            onDrop={handleDrop} onDragOver={e => e.preventDefault()}
             onClick={() => fileInputRef.current?.click()}>
             <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round"
@@ -586,13 +498,9 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
             </svg>
             <p>{lang==="th" ? "ลากวางหรือคลิกเพื่อเลือกภาพ" : "Drag & drop or click to select images"}</p>
             <input ref={fileInputRef} type="file" accept="image/*" multiple style={{display:"none"}}
-              onChange={e=>handleFiles(e.target.files)}/>
+              onChange={e => handleFiles(e.target.files)}/>
           </div>
-
-          {/* ── Camera button ── */}
-          <div className="cls-upload-divider">
-            <span>{lang === "th" ? "หรือ" : "or"}</span>
-          </div>
+          <div className="cls-upload-divider"><span>{lang === "th" ? "หรือ" : "or"}</span></div>
           <button className="cls-btn-camera" onClick={() => setCameraOpen(true)}>
             <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="cls-camera-icon-sm">
               <path strokeLinecap="round" strokeLinejoin="round"
@@ -602,7 +510,6 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
             </svg>
             {lang === "th" ? "ถ่ายภาพ" : "Take Photo"}
           </button>
-
           {files.length > 0 && (
             <>
               <div className="batch-selected-header">
@@ -633,11 +540,10 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
         </div>
       )}
 
-      {/* Processing + Result */}
+      {/* ── Processing + Result ── */}
       {showLayout && (
         <div className="batch-result-layout">
           <aside className="result-sidebar">
-
             {isProcessing && (
               <div className="proc-card">
                 <p className="proc-label">{lang==="th" ? "กำลังประมวลผล" : "Processing"}</p>
@@ -658,12 +564,13 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
               </span>
               <span className="stat-value">{displaySummary.total}</span>
               <span className="stat-sub">{doneSoFar}/{totalSlots} {lang==="th" ? "ภาพ" : "images"}</span>
+              {savedMsg && <span className="saved-msg">{savedMsg}</span>}
             </div>
 
             {Object.keys(displaySummary.byClass).length > 0 && (
               <div className="result-class-list">
                 <p className="class-list-title">{lang==="th" ? "สรุปแต่ละคลาส" : "Class summary"}</p>
-                {Object.entries(displaySummary.byClass).sort((a,b)=>b[1]-a[1]).map(([cls,count]) => (
+                {Object.entries(displaySummary.byClass).sort((a,b) => b[1]-a[1]).map(([cls,count]) => (
                   <div key={cls} className="class-row">
                     <span className="class-name">{cls}</span>
                     <div className="class-bar-wrap">
@@ -680,9 +587,8 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
                 <label className="btn-action btn-add-more">
                   {lang==="th" ? "+ เพิ่มภาพวิเคราะห์" : "+ Add more images"}
                   <input type="file" accept="image/*" multiple style={{display:"none"}}
-                    onChange={e=>handleAddMore(e.target.files)}/>
+                    onChange={e => handleAddMore(e.target.files)}/>
                 </label>
-                {/* ── Camera button in result sidebar ── */}
                 <button onClick={() => setCameraOpen(true)} className="btn-action">
                   <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8"
                     style={{width:"14px",height:"14px",display:"inline",verticalAlign:"middle",marginRight:"5px"}}>
@@ -719,16 +625,16 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
                 </button>
               </div>
             )}
-            {isProcessing && resultSlots.map((slot,idx) =>
+            {isProcessing && resultSlots.map((slot,i) =>
               (!slot || slot.status==="loading")
-                ? <SkeletonCard key={idx} filename={slot?.filename??`Image ${idx+1}`}/>
+                ? <SkeletonCard key={i} filename={slot?.filename??`Image ${i+1}`}/>
                 : null
             )}
             {viewMode==="class" && (
               <ViewByClass resultSlots={resultSlots} summary={displaySummary} lang={lang}/>
             )}
             {viewMode==="gallery" && step==="result" && (
-              <ViewGallery resultSlots={resultSlots} lang={lang}/>
+              <ViewGallery resultSlots={resultSlots} lang={lang} onRemoveSlot={handleRemoveSlot}/>
             )}
           </div>
         </div>
