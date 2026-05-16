@@ -20,22 +20,19 @@ export default function ClassifyPage() {
   const [result,      setResult]      = useState(null);
   const [error,       setError]       = useState("");
 
-  // Camera states
   const [cameraOpen,  setCameraOpen]  = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [streaming,   setStreaming]   = useState(false);
 
-  const cropAreaRef  = useRef(null);
-  const startRef     = useRef(null);
-  const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
-  const videoRef     = useRef(null);
-  const streamRef    = useRef(null);
+  const cropAreaRef    = useRef(null);
+  const startRef       = useRef(null);
+  const fileInputRef   = useRef(null);
+  const videoRef       = useRef(null);
+  const streamRef      = useRef(null);
 
   const imgFilter = `brightness(${adj.brightness}) contrast(${adj.contrast}) saturate(${adj.color})`;
   const stepIndex = STEPS.indexOf(step);
 
-  // ── เลือกไฟล์ ─────────────────────────────
   const handleFile = (f) => {
     if (!f) return;
     setFile(f);
@@ -55,7 +52,6 @@ export default function ClassifyPage() {
     handleFile(e.dataTransfer.files?.[0]);
   };
 
-  // ── Camera ────────────────────────────────
   const openCamera = async () => {
     setCameraError("");
     setCameraOpen(true);
@@ -71,7 +67,7 @@ export default function ClassifyPage() {
         videoRef.current.play();
         setStreaming(true);
       }
-    } catch (err) {
+    } catch {
       setCameraError(
         lang === "th"
           ? "ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการใช้งานกล้อง"
@@ -105,7 +101,6 @@ export default function ClassifyPage() {
     }, "image/jpeg", 0.92);
   };
 
-  // ── crop interaction ───────────────────────
   const getPos = (e, el) => {
     const rect  = el.getBoundingClientRect();
     const touch = e.touches?.[0] ?? e;
@@ -137,10 +132,8 @@ export default function ClassifyPage() {
   };
 
   const onEnd = () => setDragging(false);
-
   const resetCrop = () => { setCrop(null); startRef.current = null; };
 
-  // ── preset crop ────────────────────────────
   const applyPreset = (ratio) => {
     const el = cropAreaRef.current;
     if (!el) return;
@@ -153,7 +146,6 @@ export default function ClassifyPage() {
     setCrop({ x, y, x2: x + cw, y2: y + ch });
   };
 
-  // ── แปลง px element → px ภาพจริง ──────────
   const toImageCoords = (elW, elH) => {
     if (!crop || !naturalSize) return null;
     const sx = naturalSize.w / elW;
@@ -166,7 +158,6 @@ export default function ClassifyPage() {
     };
   };
 
-  // ── ส่ง backend ────────────────────────────
   const handleAnalyze = async () => {
     if (!file) return;
     setStep("loading");
@@ -210,7 +201,6 @@ export default function ClassifyPage() {
     setAdj({ brightness: 1, contrast: 1, color: 1 });
   };
 
-  // ════════════════════════════════════════════
   return (
     <div className="cls-wrapper">
 
@@ -224,15 +214,8 @@ export default function ClassifyPage() {
               </span>
               <button className="cls-camera-close" onClick={closeCamera}>✕</button>
             </div>
-
             <div className="cls-camera-viewfinder">
-              <video
-                ref={videoRef}
-                className="cls-camera-video"
-                autoPlay
-                playsInline
-                muted
-              />
+              <video ref={videoRef} className="cls-camera-video" autoPlay playsInline muted />
               {!streaming && !cameraError && (
                 <div className="cls-camera-loading">
                   <div className="cls-spinner" />
@@ -245,12 +228,8 @@ export default function ClassifyPage() {
                 </div>
               )}
             </div>
-
             <div className="cls-camera-actions">
-              <button
-                className="cls-btn-ghost"
-                onClick={closeCamera}
-              >
+              <button className="cls-btn-ghost" onClick={closeCamera}>
                 {lang === "th" ? "ยกเลิก" : "Cancel"}
               </button>
               <button
@@ -313,8 +292,6 @@ export default function ClassifyPage() {
               onChange={(e) => handleFile(e.target.files?.[0])}
             />
           </div>
-
-          {/* ── Camera button ── */}
           <div className="cls-upload-divider">
             <span>{lang === "th" ? "หรือ" : "or"}</span>
           </div>
@@ -336,22 +313,24 @@ export default function ClassifyPage() {
 
           {/* ซ้าย: ภาพ + crop */}
           <div className="cls-card cls-edit-left">
-            <p className="cls-hint">
-              {lang === "th" ? "ลากเพื่อครอปภาพ" : "Drag to crop image"}
-            </p>
 
-            {/* preset buttons */}
-            <div className="cls-presets">
-              {PRESET_CROPS.map((p) => (
-                <button key={p.label} className="cls-preset-btn" onClick={() => applyPreset(p.ratio)}>
-                  {p.label}
-                </button>
-              ))}
-              {crop && (
-                <button className="cls-preset-btn cls-preset-reset" onClick={resetCrop}>
-                  {lang === "th" ? "ล้าง" : "Clear"}
-                </button>
-              )}
+            {/* hint + ปุ่มล้างอยู่แถวเดียวกัน */}
+            <div className="cls-hint-row">
+              <p className="cls-hint">
+                {lang === "th" ? "ลากเพื่อครอปภาพ" : "Drag to crop image"}
+              </p>
+              <div className="cls-presets">
+                {PRESET_CROPS.map((p) => (
+                  <button key={p.label} className="cls-preset-btn" onClick={() => applyPreset(p.ratio)}>
+                    {p.label}
+                  </button>
+                ))}
+                {crop && (
+                  <button className="cls-preset-btn cls-preset-reset" onClick={resetCrop}>
+                    {lang === "th" ? "ล้าง" : "Clear"}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* crop area */}
@@ -372,7 +351,6 @@ export default function ClassifyPage() {
                 style={{ filter: imgFilter }}
                 draggable={false}
               />
-
               {crop && (
                 <>
                   <div className="cls-crop-shade" />
@@ -390,13 +368,12 @@ export default function ClassifyPage() {
             </div>
           </div>
 
-          {/* ขวา: sliders + ปุ่ม */}
+          {/* ขวา: sliders + ปุ่ม — sticky ตามรูป */}
           <div className="cls-edit-right">
             <div className="cls-sliders-card">
               <p className="cls-sliders-title">
                 {lang === "th" ? "ปรับภาพ" : "Adjust image"}
               </p>
-
               {[
                 { key: "brightness", label: lang === "th" ? "ความสว่าง" : "Brightness", min: 0.2, max: 2 },
                 { key: "contrast",   label: lang === "th" ? "ความคมชัด" : "Contrast",   min: 0.2, max: 2 },
@@ -415,7 +392,6 @@ export default function ClassifyPage() {
                   />
                 </div>
               ))}
-
               <button
                 className="cls-btn-ghost"
                 onClick={() => setAdj({ brightness: 1, contrast: 1, color: 1 })}
@@ -447,8 +423,6 @@ export default function ClassifyPage() {
       {/* ════ RESULT ════ */}
       {step === "result" && result && (
         <div className="cls-result-layout">
-
-          {/* ภาพหลัง crop + adjust */}
           <div className="cls-card cls-result-img-wrap">
             {result.preview && (
               <img
@@ -458,11 +432,7 @@ export default function ClassifyPage() {
               />
             )}
           </div>
-
-          {/* ผลลัพธ์ */}
           <div className="cls-card cls-result-panel">
-
-            {/* top result */}
             {result.top && (
               <div className="cls-top-result">
                 <span className="cls-result-badge">
@@ -478,8 +448,6 @@ export default function ClassifyPage() {
                 </div>
               </div>
             )}
-
-            {/* top 5 */}
             {result.results?.length > 1 && (
               <div className="cls-other-results">
                 <p className="cls-other-title">
@@ -499,8 +467,6 @@ export default function ClassifyPage() {
                 ))}
               </div>
             )}
-
-            {/* action buttons */}
             <div className="cls-result-actions">
               <button
                 className="cls-btn-ghost"

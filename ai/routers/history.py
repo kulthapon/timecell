@@ -52,7 +52,7 @@ def get_user_id(request: Request) -> int:
     return int(user["id"])
 
 
-# ── POST /api/pdf-history ─────────────────────────────────────────────────────
+# ── POST /api/history ─────────────────────────────────────────────────────
 @router.post("")
 async def upload_pdf(
     request: Request,
@@ -81,7 +81,7 @@ async def upload_pdf(
     }
 
 
-# ── GET /api/pdf-history ──────────────────────────────────────────────────────
+# ── GET /api/history ──────────────────────────────────────────────────────
 @router.get("")
 def list_history(
     request: Request,

@@ -29,7 +29,7 @@ function BatchCard({ entry, lang, onViewPdf, onDelete }) {
             {lang === "th" ? "ดู PDF" : "View PDF"}
           </button>
         )}
-        <button className="btn-danger-sm" onClick={() => onDelete(entry.id)}>🗑</button>
+        <button className="btn-danger-sm" onClick={() => onDelete(entry.id)}>X</button>
       </div>
     </div>
   );
@@ -64,30 +64,16 @@ export default function HistoryPage({ onNavigateToDetect }) {
     <div className="hp-wrapper">
       <div className="hp-header">
         <div>
-          <h1 className="hp-title">
-            {lang === "th" ? "ประวัติการวิเคราะห์" : "Analysis History"}
-          </h1>
           {entries.length > 0 && (
-            <p className="hp-subtitle">
+            <h3 className="hp-subtitle">
               {entries.length} {lang === "th" ? "รายการ" : "records"}
-            </p>
+            </h3>
           )}
         </div>
-        <button className="btn-action" onClick={onNavigateToDetect}>
-          {lang === "th" ? "+ วิเคราะห์ใหม่" : "+ New analysis"}
-        </button>
       </div>
 
       {loading && <div className="hp-center"><div className="proc-spinner"/></div>}
 
-      {!loading && error && (
-        <div className="hp-center">
-          <p style={{ color: "#ef4444" }}>{error}</p>
-          <button className="btn-action" onClick={reload}>
-            {lang === "th" ? "ลองใหม่" : "Retry"}
-          </button>
-        </div>
-      )}
 
       {!loading && !error && entries.length === 0 && (
         <div className="hp-center hp-empty">
@@ -96,9 +82,6 @@ export default function HistoryPage({ onNavigateToDetect }) {
               d="M9 12h3.75M9 15h3.75M9 18h3.75M13.5 21H6.75A2.25 2.25 0 014.5 18.75V5.25A2.25 2.25 0 016.75 3h7.5L19.5 7.5v11.25A2.25 2.25 0 0117.25 21z"/>
           </svg>
           <p>{lang === "th" ? "ยังไม่มีประวัติ" : "No history yet"}</p>
-          <button className="btn-action" onClick={onNavigateToDetect}>
-            {lang === "th" ? "เริ่มวิเคราะห์" : "Start analyzing"}
-          </button>
         </div>
       )}
 

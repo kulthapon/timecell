@@ -9,6 +9,7 @@ const aiRoutes        = require("./routes/aiRoutes");
 const authRoutes      = require("./routes/authRoutes");
 const utilsRoutes     = require("./routes/utilsRoutes");
 const userRoutes      = require("./routes/userRoutes");
+const historyRoutes   = require("./routes/historyRoutes");
 
 const app    = express();
 const PORT   = process.env.PORT;
@@ -42,6 +43,7 @@ app.use("/api/auth",      authRoutes);
 app.use("/api/utils",     utilsRoutes);
 app.use("/api/user",      userRoutes);
 app.use("/api/ai",        aiRoutes);
+app.use("/api/history",   historyRoutes);
 
 /* ------------------------- Static Files ----------------------- */
 app.use("/data",    express.static(path.join(__dirname, "data")));

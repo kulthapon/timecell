@@ -34,13 +34,13 @@ const NAV_ITEMS = [
     icon: <img src="/icon/detect_icon.png" alt="detect" className="nav-icon" />,
     authRequired: true,
   },
-  // {
-  //   key: "history",
-  //   path: "/history",
-  //   label: { th: "ประวัติการใช้", en: "History" },
-  //   icon: <img src="/icon/history_icon.png" alt="history" className="nav-icon" />,
-  //   authRequired: true,
-  // },
+  {
+    key: "history",
+    path: "/history",
+    label: { th: "ประวัติการวิเคราะห์", en: "History" },
+    icon: <img src="/icon/history_icon.png" alt="history" className="nav-icon" />,
+    authRequired: true,
+  },
   {
     key: "knowledge",
     path: "/knowledge",

@@ -116,7 +116,7 @@ export default function HomePage() {
                 <div className="hp-row-feature">
                   <div className="hp-row-title">
                     {lang === "th" 
-                      ? (f.key === "analyze" ? "การวิเคราะห์เซลล์แบบเรียลไทม์" : f.key === "classify" ? "การจำแนกชนิดเซลล์" : f.key === "knowledge" ? "ความรู้เกี่ยวกับเซลล์" : f.key === "count" ? "การนับจำนวนเซลล์" : "ประวัติการใช้งาน")
+                      ? (f.key === "analyze" ? "การวิเคราะห์เซลล์แบบเรียลไทม์" : f.key === "classify" ? "การจำแนกชนิดเซลล์" : f.key === "knowledge" ? "ความรู้เกี่ยวกับเซลล์" : f.key === "count" ? "การนับจำนวนเซลล์" : "ประวัติการวิเคราะห์")
                       : (f.key === "analyze" ? "Real-time Cell Analysis" : f.key === "classify" ? "Cell Classification" : f.key === "knowledge" ? "Cell Knowledge" : f.key === "count" ? "Cell Counting" : "History")}
                   </div>
                 </div>

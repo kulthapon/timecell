@@ -24,7 +24,7 @@ export default function Header() {
       en: "Cell Counting",
     },
     "/history": {
-      th: "ประวัติการใช้งาน",
+      th: "ประวัติการวิเคราะห์",
       en: "History",
     },
     "/knowledge": {

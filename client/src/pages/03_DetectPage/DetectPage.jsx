@@ -434,7 +434,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
         const imgCount = all.filter(s => s?.status === "done").length;
         uploadPdfHistory(html)
           .then(rec => {
-            if (rec) setSavedMsg(lang === "th" ? "บันทึกแล้ว ✓" : "Saved ✓");
+            if (rec) setSavedMsg(lang === "th" ? "บันทึกแล้ว" : "Saved");
           });
         return all;
       });
