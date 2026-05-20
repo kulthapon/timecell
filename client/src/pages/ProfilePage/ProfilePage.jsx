@@ -5,36 +5,23 @@ import "./ProfilePage.css";
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-/* ── message map ─────────────────────────────────────────────────────────── */
-const MSG = {
-  user_not_found:   { th: "ไม่พบผู้ใช้งาน",              en: "User not found" },
-  missing_fields:   { th: "กรุณากรอกข้อมูลให้ครบ",       en: "Please fill in all fields" },
-  password_too_short:{ th: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร", en: "Password must be at least 6 characters" },
-  wrong_password:   { th: "รหัสผ่านปัจจุบันไม่ถูกต้อง",  en: "Current password is incorrect" },
-  password_updated: { th: "เปลี่ยนรหัสผ่านสำเร็จ",       en: "Password updated successfully" },
-  server_error:     { th: "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์", en: "Server error" },
-};
-
-function t(key, lang, fallback) {
-  const entry = MSG[key];
-  if (entry) return lang === "th" ? entry.th : entry.en;
-  return fallback ?? key;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
 export default function ProfilePage() {
   const { user, login, getToken } = useAuth();
   const { lang } = useLang();
 
+  // ฟอร์มเก็บข้อมูลโปรไฟล์ส่วนตัว
   const [infoForm, setInfoForm] = useState({
     firstname: user?.firstname ?? "",
     lastname:  user?.lastname  ?? "",
   });
+  // ฟอร์มสำหรับการเปลี่ยนรหัสผ่าน
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "" });
 
+  // สถานะข้อความแจ้งเตือน (msg = ข้อความ, ok = สำเร็จหรือไม่)
   const [infoStatus, setInfoStatus] = useState({ msg: "", ok: true });
   const [pwStatus,   setPwStatus]   = useState({ msg: "", ok: true });
 
+  // สถานะอนิเมชันกำลังโหลด (Loading)
   const [infoLoading, setInfoLoading] = useState(false);
   const [pwLoading,   setPwLoading]   = useState(false);
 
@@ -47,7 +34,7 @@ export default function ProfilePage() {
     setPwStatus({ msg: "", ok: true });
   };
 
-  /* ── update profile ── */
+  /* ── 1. ฟังก์ชันส่งข้อมูลอัปเดตชื่อ-นามสกุล (Update Profile) ── */
   const handleInfoSubmit = async (e) => {
     e.preventDefault();
     setInfoLoading(true);
@@ -61,22 +48,23 @@ export default function ProfilePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        return setInfoStatus({
-          msg: t(data.message, lang, lang === "th" ? "อัปเดตไม่สำเร็จ" : "Update failed"),
-          ok: false,
-        });
+        let errorMsg = lang === "th" ? "อัปเดตไม่สำเร็จ" : "Update failed";
+        if (data.message === "user_not_found") errorMsg = lang === "th" ? "ไม่พบผู้ใช้งาน" : "User not found";
+        if (data.message === "missing_fields") errorMsg = lang === "th" ? "กรุณากรอกข้อมูลให้ครบ" : "Please fill in all fields";
+
+        return setInfoStatus({ msg: errorMsg, ok: false });
       }
 
       login(data, getToken());
       setInfoStatus({ msg: lang === "th" ? "อัปเดตโปรไฟล์สำเร็จ" : "Profile updated successfully", ok: true });
     } catch {
-      setInfoStatus({ msg: t("server_error", lang), ok: false });
+      setInfoStatus({ msg: lang === "th" ? "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์" : "Server error", ok: false });
     } finally {
       setInfoLoading(false);
     }
   };
 
-  /* ── update password ── */
+  /* ── 2. ฟังก์ชันส่งคำขอเปลี่ยนรหัสผ่านใหม่ (Update Password) ── */
   const handlePwSubmit = async (e) => {
     e.preventDefault();
     setPwLoading(true);
@@ -90,21 +78,24 @@ export default function ProfilePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        return setPwStatus({
-          msg: t(data.message, lang, lang === "th" ? "เปลี่ยนรหัสผ่านไม่สำเร็จ" : "Password update failed"),
-          ok: false,
-        });
+        let errorMsg = lang === "th" ? "เปลี่ยนรหัสผ่านไม่สำเร็จ" : "Password update failed";
+        if (data.message === "wrong_password") errorMsg = lang === "th" ? "รหัสผ่านปัจจุบันไม่ถูกต้อง" : "Current password is incorrect";
+        if (data.message === "password_too_short") errorMsg = lang === "th" ? "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" : "Password must be at least 6 characters";
+        if (data.message === "missing_fields") errorMsg = lang === "th" ? "กรุณากรอกข้อมูลให้ครบ" : "Please fill in all fields";
+
+        return setPwStatus({ msg: errorMsg, ok: false });
       }
 
-      setPwStatus({ msg: t("password_updated", lang), ok: true });
-      setPwForm({ currentPassword: "", newPassword: "" });
+      setPwStatus({ msg: lang === "th" ? "เปลี่ยนรหัสผ่านสำเร็จ" : "Password updated successfully", ok: true });
+      setPwForm({ currentPassword: "", newPassword: "" }); // ล้างรหัสผ่านออกจากฟอร์มหลังบันทึกสำเร็จ
     } catch {
-      setPwStatus({ msg: t("server_error", lang), ok: false });
+      setPwStatus({ msg: lang === "th" ? "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์" : "Server error", ok: false });
     } finally {
       setPwLoading(false);
     }
   };
 
+  // จัดการฟอร์แมตจัดวางรูปแบบวันที่สมัครสมาชิกตามภาษาหน้าบ้านปัจจุบัน
   const joinDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString(
         lang === "th" ? "th-TH" : "en-GB",
@@ -116,7 +107,7 @@ export default function ProfilePage() {
     <div className="profile-wrapper">
       <div className="profile-container">
 
-        {/* Header */}
+        {/* ส่วนหัวแสดงชื่อโปรไฟล์ของผู้ใช้ */}
         <div className="profile-header">
           <div>
             <h2>{user?.firstname} {user?.lastname}</h2>
@@ -127,7 +118,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Personal Info */}
+        {/* การ์ดแบบฟอร์ม: จัดการข้อมูลส่วนตัว */}
         <section className="profile-card">
           <h3>{lang === "th" ? "ข้อมูลส่วนตัว" : "Personal Info"}</h3>
 
@@ -148,7 +139,7 @@ export default function ProfilePage() {
             </div>
             <div className="form-group">
               <label>{lang === "th" ? "อีเมล" : "Email"}</label>
-              <input value={user?.email} disabled className="input-disabled" />
+              <input value={user?.email || ""} disabled className="input-disabled" />
             </div>
             <button type="submit" disabled={infoLoading} className="btn-save">
               {infoLoading ? (lang === "th" ? "กำลังบันทึก..." : "Saving...") : (lang === "th" ? "บันทึก" : "Save")}
@@ -156,7 +147,7 @@ export default function ProfilePage() {
           </form>
         </section>
 
-        {/* Change Password */}
+        {/* การ์ดแบบฟอร์ม: จัดการเปลี่ยนรหัสผ่าน */}
         <section className="profile-card">
           <h3>{lang === "th" ? "เปลี่ยนรหัสผ่าน" : "Change Password"}</h3>
 

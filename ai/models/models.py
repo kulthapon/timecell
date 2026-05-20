@@ -1,6 +1,3 @@
-"""
-models.py — Pydantic schemas for request bodies and API responses.
-"""
 from datetime import datetime
 from typing import Optional
 
@@ -68,17 +65,3 @@ class SaveRequest(BaseModel):
     user_id: Optional[str] = None   # ← frontend ส่งมา ไม่ต้องการ JWT แล้ว
     images:  list[SaveImageRecord]
     summary: dict
-
-
-# ── /detect/history ───────────────────────────────────────────────────────────
-
-class BatchSummary(BaseModel):
-    id:          str
-    created_at:  datetime
-    image_count: int
-    total_cells: int
-    summary:     dict
-
-
-class BatchDetail(BatchSummary):
-    images: list[dict]

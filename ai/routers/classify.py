@@ -1,8 +1,3 @@
-"""
-routers/classify.py — POST /classify
-
-Classify a single uploaded image, with optional crop and image adjustments.
-"""
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 

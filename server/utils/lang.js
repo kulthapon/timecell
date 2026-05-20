@@ -27,7 +27,7 @@ function t(lang, key) {
   const safeLang = SUPPORTED_LANGS.includes(lang) ? lang : DEFAULT_LANG;
   const entry    = translations[key];
   if (!entry) return key;
-  const [th, en] = entry.split("|").map((v) => v.trim());
+  const [th, en] = entry.split("|").map((v) => v.trim()); // แยกข้อความไทยและอังกฤษออกจากกันด้วยตัวแบ่ง "|" และตัดช่องว่าง (trim) หัวท้ายออก
   return safeLang === "th" ? th : en;
 }
 

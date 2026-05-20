@@ -1,19 +1,14 @@
 import logging
-
+import numpy as np
+import tensorflow as tf
 from PIL import Image
-
 from ml.loader import INPUT_SIZE, classification_labels, classification_model
-
 log = logging.getLogger(__name__)
-
 
 def run_classification(image: Image.Image) -> list[dict]:
     if classification_model is None:
         return []
-
-    import numpy as np
-    import tensorflow as tf
-
+    
     img  = image.resize(INPUT_SIZE).convert("RGB")
     arr  = tf.keras.preprocessing.image.img_to_array(img) / 255.0
     arr  = np.expand_dims(arr, axis=0)
@@ -27,7 +22,7 @@ def run_classification(image: Image.Image) -> list[dict]:
         for i in pred.argsort()[::-1][:5]
     ]
 
-
+# ฟังก์ชันสั้นสำหรับรับภาพที่ถูกครอปมา (Crop Image)
 def classify_crop(crop_pil: Image.Image) -> tuple[str, float]:
     results = run_classification(crop_pil)
     if not results:

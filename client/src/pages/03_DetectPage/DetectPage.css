@@ -27,8 +27,7 @@
 }
 
 .batch-dropzone:hover {
-  border-color: var(--primary);
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
 }
 
 .batch-dropzone svg {
@@ -81,6 +80,20 @@
   border-radius: 8px;
   border: 1px solid var(--border);
   display: block;
+}
+
+.cls-icon-camera {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.cls-icon-upload {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .thumb-remove {
@@ -336,7 +349,7 @@
 }
 
 .btn-action:hover {
-  background: var(--bg-sub);
+  background: var(--bg-full);
 }
 
 .btn-action svg {
@@ -478,11 +491,6 @@
     position: static;
   }
 }
-
-/*
- * DetectPage.css  — paste/merge เพิ่มใน DetectPage.css ที่มีอยู่แล้ว
- * (ไม่แตะ class เดิม — เพิ่มแค่ส่วนใหม่)
- */
 
 /* ── Progress card (sidebar) ────────────────────────────── */
 .proc-card {
@@ -661,11 +669,6 @@
 .btn-camera svg {
   flex-shrink: 0;
 }
-
-/*
- * DetectPage.css  — paste/merge เพิ่มใน DetectPage.css ที่มีอยู่แล้ว
- * (ไม่แตะ class เดิม — เพิ่มแค่ส่วนใหม่)
- */
 
 /* ── Progress card (sidebar) ────────────────────────────── */
 .proc-card {
@@ -960,9 +963,9 @@
   display: block;
   text-align: center;
   cursor: pointer;
-  border: 2px dashed var(--accent, #4f7df3) !important;
-  background: var(--accent-light, #eef2ff) !important;
-  color: var(--accent, #4f7df3) !important;
+  border: 2px dotted var(--border, #e5e7eb) !important;
+  background: var(--bg-full) !important;
+  color: var(--text) !important;
 }
 .btn-add-more:hover { opacity: 0.85; }
 .btn-reset {
@@ -970,7 +973,7 @@
   border: 1px solid var(--border, #ddd) !important;
   color: #888 !important;
 }
-.btn-reset:hover { background: var(--surface-alt, #f5f5f5) !important; }
+.btn-reset:hover { border: 2px solid var(--border, #ccc) !important; }
 
 .view-byclass {
   display: flex;
@@ -1077,7 +1080,7 @@
   padding: 12px 20px;
   border: 1.5px solid var(--border, #e5e7eb);
   border-radius: 10px;
-  background: var(--surface, #f9fafb);
+  background: var(--bg);
   color: var(--text, #374151);
   font-size: 0.95rem;
   font-weight: 500;
@@ -1085,15 +1088,8 @@
   transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
 }
 .cls-btn-camera:hover {
-  background: var(--surface-hover, #f3f4f6);
-  border-color: var(--primary, #6366f1);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #6366f1) 12%, transparent);
-}
-.cls-camera-icon-sm {
-  width: 20px;
-  height: 20px;
-  stroke: var(--primary, #6366f1);
-  flex-shrink: 0;
+  background: var(--bg);
+  border-color: var(--primary);
 }
 
 /* Camera overlay */

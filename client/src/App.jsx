@@ -41,7 +41,6 @@ export default function App() {
           <BrowserRouter>
             <Navbar />
             <Title />
-            {/* CONTENT AREA (IMPORTANT) */}
             <main className={`page-content ${expanded ? "sidebar-expanded" : ""}`}>
               <div className="page-wrapper">
 

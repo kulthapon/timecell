@@ -4,7 +4,6 @@ export const CELL_TYPES = [
     name: { th: "นิวโทรฟิล", en: "Neutrophil" },
     pct: 60,
     color: "#185FA5",
-    bg: "#E6F1FB",
     size: "10–12 µm",
     life: "6–8 hr",
     summary: {
@@ -48,7 +47,6 @@ export const CELL_TYPES = [
     name: { th: "ลิมโฟไซต์", en: "Lymphocyte" },
     pct: 30,
     color: "#3B6D11",
-    bg: "#EAF3DE",
     size: "7–12 µm",
     life: "days–years",
     summary: {
@@ -92,7 +90,6 @@ export const CELL_TYPES = [
     name: { th: "โมโนไซต์", en: "Monocyte" },
     pct: 6,
     color: "#BA7517",
-    bg: "#FAEEDA",
     size: "14–20 µm",
     life: "1–3 days",
     summary: {
@@ -136,7 +133,6 @@ export const CELL_TYPES = [
     name: { th: "อีโอซิโนฟิล", en: "Eosinophil" },
     pct: 3,
     color: "#993C1D",
-    bg: "#FAECE7",
     size: "12–15 µm",
     life: "8–12 days (tissue)",
     summary: {
@@ -180,7 +176,6 @@ export const CELL_TYPES = [
     name: { th: "เบโซฟิล", en: "Basophil" },
     pct: 1,
     color: "#534AB7",
-    bg: "#EEEDFE",
     size: "10–15 µm",
     life: "few days",
     summary: {

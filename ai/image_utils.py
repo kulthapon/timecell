@@ -58,9 +58,5 @@ def apply_adjustments(
 # ── Disk storage ──────────────────────────────────────────────────────────────
 
 def save_image_file(folder: Path, name: str, b64_or_dataurl: str) -> str:
-    """
-    Write a base64 image to disk inside `folder`.
-    Returns the relative URL path:  /static/uploads/{folder.name}/{name}
-    """
     (folder / name).write_bytes(b64_to_bytes(b64_or_dataurl))
     return f"/static/uploads/{folder.name}/{name}"

@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+from ultralytics import YOLO
+import tensorflow as tf
 
 from config import (
     CLASSIFICATION_LABELS_PATH,
@@ -10,12 +12,11 @@ from config import (
 
 log = logging.getLogger(__name__)
 
-# ── YOLO ──────────────────────────────────────────────────────────────────────
+# ── Object Detection Model ──────────────────────────────────────────────────────────────────────
 yolo_model = None
 
 if YOLO_MODEL_PATH and os.path.exists(YOLO_MODEL_PATH):
     try:
-        from ultralytics import YOLO
         yolo_model = YOLO(YOLO_MODEL_PATH)
         log.info("YOLO loaded: %s", YOLO_MODEL_PATH)
     except Exception as exc:
@@ -23,14 +24,12 @@ if YOLO_MODEL_PATH and os.path.exists(YOLO_MODEL_PATH):
 else:
     log.warning("YOLO model not found: %s", YOLO_MODEL_PATH)
 
-# ── TF / Keras classifier ─────────────────────────────────────────────────────
+# ── Image Classification Model ──────────────────────────────────────────────────────
 classification_model  = None
 classification_labels: list[str] = []
 INPUT_SIZE = (224, 224)
 
 try:
-    import tensorflow as tf
-
     if CLASSIFICATION_MODEL_PATH and os.path.exists(CLASSIFICATION_MODEL_PATH):
         classification_model = tf.keras.models.load_model(CLASSIFICATION_MODEL_PATH)
         shape      = classification_model.input_shape

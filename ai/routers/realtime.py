@@ -1,9 +1,5 @@
-"""
-routers/websocket.py — Optimized Realtime detection.
-"""
 import io
 import logging
-
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from PIL import Image
 
@@ -18,8 +14,7 @@ async def ws_detect(ws: WebSocket):
     log.info("WebSocket connected: %s", ws.client)
     try:
         while True:
-            # รับข้อมูลภาพดิบ
-            data = await ws.receive_bytes()
+            data = await ws.receive_bytes() # รับข้อมูลภาพดิบ
 
             if yolo_model is None:
                 await ws.send_json({"error": "YOLO model not loaded"})
@@ -29,14 +24,12 @@ async def ws_detect(ws: WebSocket):
             results = yolo_model(image, imgsz=320, verbose=False)
             result = results[0]
 
-            # สกัดเฉพาะพิกัดและข้อมูลที่จำเป็น
             detections = []
             for box in result.boxes:
                 # แปลงค่า Tensor เป็นตัวเลขปกติ
                 conf = float(box.conf)
                 
-                # กรองเฉพาะค่าความมั่นใจที่สูงพอ (เช่น > 0.25) เพื่อลดขยะใน JSON
-                if conf > 0.1:
+                if conf > 0.1: # กรองค่าความมั่นใจที่สูงพอ
                     detections.append({
                         "label": result.names[int(box.cls)],
                         "confidence": round(conf, 2),
@@ -48,7 +41,7 @@ async def ws_detect(ws: WebSocket):
                         },
                     })
 
-            # ส่งกลับเฉพาะ JSON (ไม่มีรูป Base64 แล้ว)
+            # ส่ง JSON กลับไปยัง Client ผ่าน WebSocket
             await ws.send_json({
                 "detections": detections,
                 "count": len(detections),

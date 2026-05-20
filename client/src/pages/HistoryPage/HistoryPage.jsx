@@ -77,10 +77,7 @@ export default function HistoryPage({ onNavigateToDetect }) {
 
       {!loading && !error && entries.length === 0 && (
         <div className="hp-center hp-empty">
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round"
-              d="M9 12h3.75M9 15h3.75M9 18h3.75M13.5 21H6.75A2.25 2.25 0 014.5 18.75V5.25A2.25 2.25 0 016.75 3h7.5L19.5 7.5v11.25A2.25 2.25 0 0117.25 21z"/>
-          </svg>
+          <img src="/icon/history_icon.png" alt="History Icon" className="cls-icon-history"/>
           <p>{lang === "th" ? "ยังไม่มีประวัติ" : "No history yet"}</p>
         </div>
       )}

@@ -26,6 +26,13 @@
   margin: 0;
 }
 
+.cls-icon-history {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
 /* ── List ── */
 .hp-list {
   display: flex;
@@ -35,7 +42,7 @@
 
 /* ── Card ── */
 .hp-batch-card {
-  background: var(--surface, #fff);
+  background: var(--bg);
   border: 1px solid var(--border, #e5e7eb);
   border-radius: 10px;
   padding: 0.85rem 1rem;
@@ -55,7 +62,7 @@
 .hp-batch-date {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-primary, #111);
+  color: var(--text);
 }
 .hp-no-file {
   font-size: 0.72rem;

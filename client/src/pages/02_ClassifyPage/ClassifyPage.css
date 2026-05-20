@@ -65,8 +65,7 @@
   transition: border-color 0.15s, background 0.15s;
 }
 .cls-dropzone:hover {
-  border-color: var(--primary);
-  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
 }
 .cls-upload-icon { width: 44px; height: 44px; stroke: #999; }
 .cls-dropzone p  { font-size: 14px; color: #666; margin: 0; }
@@ -129,9 +128,10 @@
 
 /* sliders card */
 .cls-sliders-card {
-  background: #f9f9f9;
+  background: var(--bg);
   border-radius: 8px;
   padding: 1rem;
+  margin-top: 3rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -162,14 +162,14 @@
   width: 100%;
   padding: 8px 0;
   background: none;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 13px;
-  color: #555;
+  color: var(--text);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
-.cls-btn-ghost:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.cls-btn-ghost:hover { background: var(--bg-sub);}
 
 .cls-error {
   font-size: 13px;
@@ -452,6 +452,20 @@
 }
 .cls-camera-shutter:not(:disabled):active .cls-shutter-dot {
   transform: scale(0.88);
+}
+
+.cls-icon-camera {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.cls-icon-upload {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 /* Mobile adjustments */

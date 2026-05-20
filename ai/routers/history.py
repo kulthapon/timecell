@@ -86,7 +86,7 @@ async def upload_pdf(
 def list_history(
     request: Request,
     skip:    int     = 0,
-    limit:   int     = 50,
+    limit:   int     = 100,
     db:      Session = Depends(get_db),
 ):
     user_id = get_user_id(request)

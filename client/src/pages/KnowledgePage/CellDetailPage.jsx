@@ -143,9 +143,7 @@ export default function CellDetailPage() { // ← เอา prop lang ออก
                 alt={`${cell.name[lang]} ${i + 1}`}
                 loading="lazy"
               />
-              <div className="gallery-item-overlay">
-                <span className="zoom-icon">⊕</span>
-              </div>
+              <div className="gallery-item-overlay"></div>
             </div>
           ))}
         </div>

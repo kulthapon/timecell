@@ -1,9 +1,6 @@
-/**
- * routes/historyRoutes.js
- */
 const express             = require("express");
 const multer              = require("multer");
-const { requireAuth }     = require("../middleware/authMiddleware");
+const authMiddleware     = require("../middleware/authMiddleware");
 const {
   uploadPdf,
   listHistory,
@@ -12,11 +9,13 @@ const {
 } = require("../controllers/historyController");
 
 const router = express.Router();
+
+// ตั้งค่าการบันทึกไฟล์ PDF ไว้บนแรมชั่วคราว (Memory Storage)
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post  ("/",         requireAuth, upload.single("file"), uploadPdf);
-router.get   ("/",         requireAuth, listHistory);
-router.get   ("/:id/file", requireAuth, getFile);
-router.delete("/:id",      requireAuth, deleteHistory);
+router.post  ("/",         authMiddleware, upload.single("file"), uploadPdf);
+router.get   ("/",         authMiddleware, listHistory);
+router.get   ("/:id/file", authMiddleware, getFile);
+router.delete("/:id",      authMiddleware, deleteHistory);
 
 module.exports = router;

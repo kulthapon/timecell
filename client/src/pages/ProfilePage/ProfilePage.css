@@ -22,16 +22,6 @@
   border-radius: 12px;
   padding: 1.5rem;
 }
-.profile-avatar {
-  width: 56px; height: 56px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
-  font-size: 22px;
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
 .profile-header h2 {
   font-size: 18px;
   font-weight: 600;

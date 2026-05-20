@@ -6,56 +6,74 @@ import "./DetectPage.css";
 
 const API_URL     = process.env.REACT_APP_API_URL;
 const CONCURRENCY = 3;
+
 const COLORS = ["#ef4444","#3b82f6","#22c55e","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#f97316"];
 const CELL_TYPES  = ["basophil", "eosinophil", "lymphocyte", "monocyte", "neutrophil"];
 
-/* ─── Draw bbox ──────────────────────────────────────────────────────────── */
+/* ─── ฟังก์ชันวาดกรอบ Bounding Box ─────────────────────────────── */
 async function drawAnnotated(imgSrc, detections) {
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    img.crossOrigin = "anonymous"; // ป้องกันปัญหาเรื่อง CORS เวลาดึงภาพข้ามโดเมน
     img.onload = () => {
       const canvas = document.createElement("canvas");
       canvas.width  = img.naturalWidth;
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0); // วาดภาพต้นฉบับลงไปก่อน
+      
       const colorMap = {}; let ci = 0;
       detections.forEach(({ label, bbox }) => {
+        // จับคู่สีประจำตัวให้กับคลาสเซลล์นั้นๆ (ถ้ายังไม่มีสีให้ดึงสีถัดไปจากอาร์เรย์ COLORS)
         if (!colorMap[label]) colorMap[label] = COLORS[ci++ % COLORS.length];
         const { x, y, x2, y2 } = bbox;
         const color = colorMap[label];
-        const lw = Math.max(2, canvas.width / 500);
+        const lw = Math.max(2, canvas.width / 500); // คำนวณความหนาของเส้นตามขนาดรูปภาพ
+        
+        // 1. วาดกรอบสี่เหลี่ยมรอบเซลล์
         ctx.strokeStyle = color; ctx.lineWidth = lw;
         ctx.strokeRect(x, y, x2-x, y2-y);
-        const fs = Math.max(11, canvas.width / 70);
+        
+        // 2. วาดป้ายข้อความกำกับ (Label Tag) 
+        const fs = Math.max(11, canvas.width / 70); // คำนวณขนาดตัวอักษรตามขนาดรูปภาพ
         ctx.font = `bold ${fs}px sans-serif`;
         const tw = ctx.measureText(label).width, pad = 3;
+        // จัดตำแหน่งไม่ให้ตัวอักษรหลุดขอบบนของภาพ
         const ty = y > fs + pad*2 ? y : y + (y2-y) + fs + pad*2;
+        
+        // วาดพื้นหลังป้าย
         ctx.fillStyle = color;
         ctx.fillRect(x, ty-fs-pad*2, tw+pad*2, fs+pad*2);
+        // เขียนข้อความคลาสเซลล์
         ctx.fillStyle = "#fff";
         ctx.fillText(label, x+pad, ty-pad);
       });
+      // ส่งค่ากลับเป็นรูปภาพแบบ Base64 (DataURL) เพื่อนำไปแสดงผลบนแท็ก <img />
       resolve(canvas.toDataURL("image/jpeg", 0.92));
     };
-    img.onerror = () => resolve(imgSrc);
+    img.onerror = () => resolve(imgSrc); // ถ้าภาพโหลดพัง ให้ส่งภาพดิบเดิมกลับไป
     img.src = imgSrc;
   });
 }
 
-/* ─── Crop helper ────────────────────────────────────────────────────────── */
+/* ─── ฟังก์ชันตัดรูปภาพ (Crop) เฉพาะส่วนที่พบเซลล์ ────────────────────────────── */
 async function cropDetections(imgSrc, detections) {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
+      // วนลูปตัดภาพทีละจุดตามพิกัด Bounding Box
       const crops = detections.map(d => {
         const bw = d.bbox.x2-d.bbox.x, bh = d.bbox.y2-d.bbox.y;
         const c = document.createElement("canvas");
         c.width = bw; c.height = bh;
+        // ตัดรูปจากรูปใหญ่มาวาดลงบนแคนวาสขนาดเล็ก
         c.getContext("2d").drawImage(img, d.bbox.x, d.bbox.y, bw, bh, 0, 0, bw, bh);
-        return { label: d.label, confidence: d.confidence, dataUrl: c.toDataURL("image/jpeg", 0.85) };
+        return { 
+          label: d.label, 
+          confidence: d.confidence, 
+          dataUrl: c.toDataURL("image/jpeg", 0.85) // แปลงภาพที่ครอปแล้วเป็น Base64
+        };
       });
       resolve(crops);
     };
@@ -64,7 +82,7 @@ async function cropDetections(imgSrc, detections) {
   });
 }
 
-/* ─── Build PDF HTML ─────────────────────────────────────────────────────── */
+/* ─── ฟังก์ชันสร้างโครงสร้าง HTML สำหรับพิมพ์หรือแปลงเป็น PDF ─────────────────────── */
 function buildPdfHtml(resultSlots, summary, lang) {
   const t = {
     title:   lang === "th" ? "รายงานผลการวิเคราะห์เซลล์" : "Cell Analysis Report",
@@ -76,6 +94,7 @@ function buildPdfHtml(resultSlots, summary, lang) {
     { dateStyle: "long", timeStyle: "short" }
   );
 
+  // จัดกลุ่มรูปภาพที่ครอป (Crops) แยกตามชนิดคลาส เพื่อเตรียมแสดงผลในรายงาน
   const byClass = {};
   resultSlots.forEach(slot => {
     if (slot?.status !== "done") return;
@@ -85,10 +104,11 @@ function buildPdfHtml(resultSlots, summary, lang) {
     });
   });
 
+  // สร้างส่วนแสดงภาพครอปในรายงาน
   const classSections = Object.entries(summary?.byClass ?? {})
-    .sort((a,b) => b[1]-a[1])
+    .sort((a,b) => b[1]-a[1]) // เรียงลำดับจากคลาสที่เจอมากสุดไปน้อยสุด
     .map(([cls, count]) => {
-      const imgs = (byClass[cls] ?? []).slice(0, 30)
+      const imgs = (byClass[cls] ?? []).slice(0, 100)
         .map(url => `<img src="${url}" style="width:60px;height:60px;object-fit:cover;border-radius:5px;border:1px solid #e5e7eb;display:inline-block">`)
         .join("");
       return `
@@ -102,6 +122,7 @@ function buildPdfHtml(resultSlots, summary, lang) {
       </div>`;
     }).join("");
 
+  // สร้างแถวข้อมูลสรุปเป็นตารางเปอร์เซ็นต์
   const total = summary?.total ?? 0;
   const tableRows = CELL_TYPES.map(cls => {
     const n   = summary?.byClass?.[cls] ?? 0;
@@ -145,27 +166,30 @@ ${classSections}
 </body></html>`;
 }
 
-/* ─── Generate PDF (print popup) ─────────────────────────────────────────── */
+/* ─── ฟังก์ชันสั่งพิมพ์ PDF โดยเปิดหน้าต่างใหม่ (Pop-up) ────────────────────────── */
 async function generatePdf(resultSlots, summary, lang) {
   const html = buildPdfHtml(resultSlots, summary, lang);
   const w = window.open("", "_blank");
   if (!w) { alert("Pop-up blocked — please allow pop-ups"); return; }
   w.document.write(html);
   w.document.close();
+  // หน่วงเวลารอเบราว์เซอร์เรนเดอร์โครงสร้างแป๊บนึงแล้วสั่งเปิดหน้าต่างพิมพ์ของระบบ (Print Dialog)
   setTimeout(() => { w.focus(); w.print(); }, 700);
 }
 
-/* ─── Concurrency ────────────────────────────────────────────────────────── */
+/* ─── อัลกอริทึมจัดการคิวการทำงานพร้อมกันแบบจำกัดจำนวน (Concurrency Control Pool) ─── */
 async function pooledMap(items, fn, n) {
   const results = new Array(items.length); let next = 0;
   async function worker() {
+    // วนทำงานไปเรื่อยๆ ตราบใดที่ในคิวยังมีรูปภาพเหลืออยู่
     while (next < items.length) { const i = next++; results[i] = await fn(items[i], i); }
   }
+  // สั่งรัน Worker พร้อมกันเท่ากับจำนวนค่า n ที่ตั้งไว้ (ในที่นี้คือ 3 งานพร้อมกัน)
   await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker));
   return results;
 }
 
-/* ─── recompute summary ──────────────────────────────────────────────────── */
+/* ─── ฟังก์ชันคำนวณสรุปยอดจำนวนเซลล์ใหม่ ─────────────────────────────────────── */
 function recomputeSummary(slots) {
   const byClass = {}; let total = 0;
   slots.forEach(r => (r?.detections ?? []).forEach(d => {
@@ -174,7 +198,7 @@ function recomputeSummary(slots) {
   return { total, byClass };
 }
 
-/* ─── Skeleton ───────────────────────────────────────────────────────────── */
+/* ─── Component: การ์ด Skeleton ตอนรูปภาพกำลังโหลดวิเคราะห์ ───────────────────── */
 function SkeletonCard({ filename }) {
   return (
     <div className="result-img-card skeleton-card">
@@ -185,10 +209,11 @@ function SkeletonCard({ filename }) {
   );
 }
 
-/* ─── View A: By Cell Type ───────────────────────────────────────────────── */
+/* ─── Component มุมมองย่อย A: แสดงรูปภาพที่คัดแยกแบบกริดตามชนิดคลาสเซลล์ ─────────── */
 function ViewByClass({ resultSlots, summary, lang }) {
   const byClass  = summary?.byClass ?? {};
   const allCrops = {};
+  // รวบรวมชิ้นภาพที่ครอปสำเร็จทั้งหมดมาจัดกลุ่มตามประเภทชื่อเซลล์
   resultSlots.forEach(slot => {
     if (slot?.status !== "done") return;
     (slot.crops ?? []).forEach(c => {
@@ -220,10 +245,11 @@ function ViewByClass({ resultSlots, summary, lang }) {
   );
 }
 
-/* ─── View B: Gallery ────────────────────────────────────────────────────── */
+/* ─── Component มุมมองย่อย B: แกลเลอรีดูภาพใหญ่และเลื่อนรูปซ้ายขวาได้ ──────────────── */
 function ViewGallery({ resultSlots, lang, onRemoveSlot }) {
   const done = resultSlots.filter(s => s?.status === "done");
   const [idx, setIdx] = useState(0);
+  // คอยตรวจสอบหากผู้ใช้กดลบภาพสุดท้ายไป ให้ดึง Index ถอยกลับมาไม่ให้เกินจำนวนรูปที่เหลือ
   useEffect(() => {
     if (idx >= done.length && done.length > 0) setIdx(done.length - 1);
   }, [done.length]);
@@ -246,10 +272,6 @@ function ViewGallery({ resultSlots, lang, onRemoveSlot }) {
         <div className="gallery-filename">{cur.filename}</div>
         <button className="gallery-remove-btn" onClick={handleRemove}
           title={lang === "th" ? "ลบรูปนี้" : "Remove this image"}>
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" stroke="currentColor" style={{width:14,height:14}}>
-            <path strokeLinecap="round" strokeLinejoin="round"
-              d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
-          </svg>
           {lang === "th" ? "ลบรูปนี้" : "Remove"}
         </button>
       </div>
@@ -266,7 +288,7 @@ function ViewGallery({ resultSlots, lang, onRemoveSlot }) {
   );
 }
 
-/* ─── Camera Modal ───────────────────────────────────────────────────────── */
+/* ─── Component: หน้าต่างกล้องถ่ายภาพบนเว็บ (Camera Interface Modal) ─────────── */
 function CameraModal({ lang, onCapture, onClose }) {
   const videoRef  = useRef(null);
   const streamRef = useRef(null);
@@ -276,6 +298,7 @@ function CameraModal({ lang, onCapture, onClose }) {
     let active = true;
     (async () => {
       try {
+        // ขออนุญาตเปิดกล้องหลังของอุปกรณ์มือถือ (facingMode: environment) โดยไม่เอาเสียง
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
         if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
@@ -286,15 +309,18 @@ function CameraModal({ lang, onCapture, onClose }) {
           : "Cannot access camera. Please allow camera permission.");
       }
     })();
+    // ปิดแทร็กสตรีมกล้องทันทีเมื่อคอมโพเนนต์นี้ถูกปิดการใช้งาน (กันไฟกล้องค้าง)
     return () => { active = false; streamRef.current?.getTracks().forEach(t => t.stop()); };
   }, []);
+  // ฟังก์ชันจับภาพจากวิดีโอ (Shutter Click)
   const capture = () => {
     const video = videoRef.current; if (!video) return;
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.getContext("2d").drawImage(video, 0, 0); // วาดเฟรมภาพจากวิดีโอปัจจุบันลงแคนวาส
     canvas.toBlob(blob => {
       if (!blob) return;
+      // แปลง Blob ของแคนวาสให้ออกมาเป็นโครงสร้างไฟล์รูปภาพ .jpg ส่งกลับไปวิเคราะห์ต่อ
       onCapture(new File([blob], `camera_${Date.now()}.jpg`, { type: "image/jpeg" }));
     }, "image/jpeg", 0.92);
   };
@@ -325,22 +351,25 @@ function CameraModal({ lang, onCapture, onClose }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════ 
+   MAIN EXPORT COMPONENT: หน้าจัดการวิเคราะห์ภาพหลัก
+   ═══════════════════════════════════════════════════════════════════════════ */
 export default function DetectPage({ initialBatch = null, historyId = null, onBack }) {
   const { lang }                    = useLang();
   const { isLoggedIn, getToken }    = useAuth();
 
+  // กำหนดสเตตัสหน้าจอ (upload = หน้าอัปโหลด, processing = กำลังวิเคราะห์, result = หน้าโชว์ผลลัพธ์)
   const [step, setStep]               = useState(initialBatch ? "loading_history" : "upload");
-  const [files, setFiles]             = useState([]);
-  const [progress, setProgress]       = useState({ done: 0, total: 0 });
-  const [resultSlots, setResultSlots] = useState([]);
-  const [summary, setSummary]         = useState(null);
-  const [viewMode, setViewMode]       = useState("class");
+  const [files, setFiles]             = useState([]); // เก็บรายการไฟล์รูปภาพที่เตรียมพร้อมรอส่งวิเคราะห์
+  const [progress, setProgress]       = useState({ done: 0, total: 0 }); // เลขตัวนับความคืบหน้า % ตอนโหลด
+  const [resultSlots, setResultSlots] = useState([]); // กล่องเก็บผลลัพธ์จากการวิเคราะห์ของทุกๆ รูป
+  const [summary, setSummary]         = useState(null); // ตัวแปรเก็บผลสรุปรวมทั้งหมด
+  const [viewMode, setViewMode]       = useState("class"); // โหมดการเลือกดู (class = แยกตามสปีชีส์, gallery = ดูรูปใหญ่)
   const [cameraOpen, setCameraOpen]   = useState(false);
-  const [savedMsg, setSavedMsg]       = useState("");
+  const [savedMsg, setSavedMsg]       = useState(""); // ข้อความแจ้งเตือนสถานะเมื่อบันทึกประวัติลงฐานข้อมูลสำเร็จ
   const fileInputRef = useRef(null);
 
-  /* ── โหลด history (lightweight — แค่ detections ไม่มีรูป) ── */
+  /* ── ใช้ Effect โหลดผลลัพธ์เก่าจากประวัติประธานใช้งาน (กรณีเปิดดูประวัติย้อนหลัง) ── */
   useEffect(() => {
     if (!initialBatch?.length) return;
     const slots = initialBatch.map(rec => ({
@@ -356,19 +385,20 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
     setStep("result");
   }, []); // eslint-disable-line
 
-  /* ── ลบ slot + recalculate ── */
+  /* ── ฟังก์ชันสั่งลบช่องผลลัพธ์รูปภาพ และสั่งคำนวณจำนวนข้อมูลใหม่ทันที ── */
   const handleRemoveSlot = useCallback((slotIdx) => {
     setResultSlots(prev => {
       const next = prev.filter((_, i) => i !== slotIdx);
       setSummary(recomputeSummary(next));
+      // ถ้าลบรูปภาพที่วิเคราะห์จนไม่เหลืออะไรเลย ให้เด้งกลับไปหน้าจออัปโหลดเริ่มต้นใหม่
       if (next.filter(s => s?.status === "done").length === 0) setStep("upload");
       return next;
     });
   }, []);
 
-  /* ── file helpers ── */
+  /* ── ฟังก์ชันอำนวยความสะดวกในการเลือกรูปภาพจากเครื่อง ── */
   const handleFiles = (incoming) => {
-    const valid = Array.from(incoming).filter(f => f.type.startsWith("image/"));
+    const valid = Array.from(incoming).filter(f => f.type.startsWith("image/")); // รับเฉพาะไฟล์ตระกูลรูปภาพเท่านั้น
     setFiles(prev => [...prev, ...valid.map(f => ({
       id: Math.random().toString(36).slice(2), file: f, previewUrl: URL.createObjectURL(f),
     }))]);
@@ -376,24 +406,28 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
   const handleDrop = (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
   const removeFile = (id) => setFiles(prev => prev.filter(f => f.id !== id));
 
+  // ฟังก์ชันรองรับการถ่ายภาพจากโมดูลกล้องถ่ายรูปสด
   const handleCameraCapture = (file) => {
     setCameraOpen(false);
     const entry = { id: Math.random().toString(36).slice(2), file, previewUrl: URL.createObjectURL(file) };
+    // ถ้าถ่ายภาพในขณะที่อยู่หน้าดูผลลัพธ์แล้ว ให้ส่งไปยิงประมวลผลทันทีโดยไม่ต้องรอปุ่มวิเคราะห์
     if (step === "result" || step === "processing") handleAnalyze([entry]);
     else setFiles(prev => [...prev, entry]);
   };
 
-  /* ── process one file ── */
+  /* ── ฟังก์ชันหลักส่งข้อมูลรูปภาพ 1 รูปไปประมวลผลที่ระบบเซิร์ฟเวอร์ AI ── */
   const processFile = useCallback(async ({ file, previewUrl }) => {
     const form = new FormData();
     form.append("file", file, file.name);
     const headers = {};
-    if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`;
+    if (isLoggedIn) headers["Authorization"] = `Bearer ${getToken()}`; // แนบ JWT Token หากผู้ใช้ล็อกอินอยู่
     try {
       const res = await fetch(`${API_URL}/api/ai/detect`, { method: "POST", headers, body: form });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data       = await res.json();
       const detections = data.detections ?? [];
+      
+      // นำรูปภาพที่วิเคราะห์มาทำการวาดโครงข่ายกรอบข้อความ หรือดึงข้อมูลภาพครอปย่อยมาจัดเก็บ
       const annotatedB64 = detections.length > 0
         ? await drawAnnotated(previewUrl, detections) : previewUrl;
       const crops = data.crops?.length ? data.crops : await cropDetections(previewUrl, detections);
@@ -404,20 +438,22 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
     }
   }, [isLoggedIn, getToken]);
 
-  /* ── analyze ── */
+  /* ── ฟังก์ชันคุมคิวสั่งรันงานวิเคราะห์ภาพทั้งหมดแบบกลุ่ม (Batch) ── */
   const handleAnalyze = useCallback(async (toProcess) => {
     if (!toProcess?.length) return;
     const startIdx = resultSlots.length;
+    // เติมช่องสำหรับรูปที่จะประมวลผลเพิ่มในสถานะสปินเนอร์หมุนรอ (loading)
     setResultSlots(prev => [...prev, ...toProcess.map(f => ({ filename: f.file.name, status: "loading" }))]);
     setStep("processing");
     setProgress({ done: 0, total: toProcess.length });
     setSavedMsg("");
 
+    // เรียกใช้ระบบควบคุมงาน
     await pooledMap(toProcess, async (fe, i) => {
       const slot = await processFile(fe);
       setResultSlots(prev => {
-        const n = [...prev]; n[startIdx+i] = slot;
-        setSummary(recomputeSummary(n));
+        const n = [...prev]; n[startIdx+i] = slot; // เมื่อประมวลผลเสร็จให้สลับสเตตัสช่องข้อมูล
+        setSummary(recomputeSummary(n)); // สั่งอัปเดตค่าสรุปยอดเซลล์ทันที (Live Update)
         return n;
       });
       setProgress(prev => ({ ...prev, done: prev.done+1 }));
@@ -425,13 +461,12 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
 
     setStep("result");
 
-    // ── บันทึก PDF ขึ้น server (เฉพาะ logged in) ──
+    // ถ้าหากผู้ใช้ล็อกอินอยู่แล้วในระบบ ให้ยิงเซฟรายงานโครงสร้าง HTML ชุดนี้เก็บไปบันทึกประวัติทันทีอัตโนมัติ
     if (isLoggedIn) {
       setResultSlots(prev => {
         const all     = [...prev];
         const newSum  = recomputeSummary(all);
         const html    = buildPdfHtml(all, newSum, lang);
-        const imgCount = all.filter(s => s?.status === "done").length;
         uploadPdfHistory(html)
           .then(rec => {
             if (rec) setSavedMsg(lang === "th" ? "บันทึกแล้ว" : "Saved");
@@ -449,6 +484,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
     if (entries.length) handleAnalyze(entries);
   };
 
+  // ฟังก์ชันสำหรับจำลองปุ่มดาวน์โหลดรูปภาพที่แปะป้าย (Labeled Image) ทุกภาพพร้อมกันออกมาลงเครื่องคอมพิวเตอร์
   const downloadImages = () => {
     resultSlots.forEach(r => {
       if (!r?.annotatedB64) return;
@@ -457,10 +493,12 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
     });
   };
 
+  // ฟังก์ชันล้างค่ากลับสู่จุดเริ่มต้น
   const reset = () => {
     setStep("upload"); setFiles([]); setResultSlots([]); setSummary(null); setSavedMsg("");
   };
 
+  // ตัวแปรตัวแปลงค่าเงื่อนไขต่างๆ สำหรับปรับแต่งคลาสในส่วนของ JSX หน้าเว็บหน้าตา UI 
   const isProcessing   = step === "processing";
   const isLoadingHist  = step === "loading_history";
   const doneSoFar      = resultSlots.filter(s => s?.status === "done").length;
@@ -471,6 +509,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
 
   return (
     <div className="batch-wrapper">
+      {/* หน้าต่างส่องกล้องถ่ายรูป */}
       {cameraOpen && <CameraModal lang={lang} onCapture={handleCameraCapture} onClose={() => setCameraOpen(false)}/>}
 
       {onBack && (
@@ -486,30 +525,23 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
         </div>
       )}
 
-      {/* ── Upload ── */}
+      {/* ── ส่วนที่ 1: การรับไฟล์รูปเข้าเครื่อง (Upload View) ── */}
       {step === "upload" && (
         <div className="batch-upload-layout">
           <div className="batch-dropzone"
             onDrop={handleDrop} onDragOver={e => e.preventDefault()}
             onClick={() => fileInputRef.current?.click()}>
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-            </svg>
-            <p>{lang==="th" ? "ลากวางหรือคลิกเพื่อเลือกภาพ" : "Drag & drop or click to select images"}</p>
+            <img src="/icon/upload_icon.png" alt="Upload Icon" className="cls-icon-upload"/>
+            <p>{lang==="th" ? "วางภาพที่นี่ หรือเลือกไฟล์" : "Drop image here, or Browse"}</p>
             <input ref={fileInputRef} type="file" accept="image/*" multiple style={{display:"none"}}
               onChange={e => handleFiles(e.target.files)}/>
           </div>
           <div className="cls-upload-divider"><span>{lang === "th" ? "หรือ" : "or"}</span></div>
           <button className="cls-btn-camera" onClick={() => setCameraOpen(true)}>
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" className="cls-camera-icon-sm">
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
-            </svg>
+            <img src="/icon/camera_icon.png" alt="Camera Icon" className="cls-icon-camera"/>
             {lang === "th" ? "ถ่ายภาพ" : "Take Photo"}
           </button>
+          
           {files.length > 0 && (
             <>
               <div className="batch-selected-header">
@@ -540,15 +572,18 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
         </div>
       )}
 
-      {/* ── Processing + Result ── */}
+      {/* ── ส่วนที่ 2: หน้าเรนเดอร์ขั้นตอนกำลังประมวลผลหรือแสดงผลข้อมูล (Processing & Results Dashboard) ── */}
       {showLayout && (
         <div className="batch-result-layout">
+          {/* เมนูด้านข้าง (Sidebar): สถิติตัวนับ และ แถบปุ่มควบคุมการจัดการรายงาน */}
           <aside className="result-sidebar">
             {isProcessing && (
               <div className="proc-card">
                 <p className="proc-label">{lang==="th" ? "กำลังประมวลผล" : "Processing"}</p>
                 <p className="proc-count">{progress.done}<span>/{progress.total}</span></p>
+                {/* หลอด Progress Bar ความคืบหน้า */}
                 <div className="proc-track"><div className="proc-fill" style={{width:`${pct}%`}}/></div>
+                {/* แสดงไฟจุดกลมบ่งชี้สเตตัสทีละรูปภาพ */}
                 <div className="proc-pills">
                   {resultSlots.map((s,i) => (
                     <span key={i} className={`proc-pill proc-pill--${s?.status??"loading"}`} title={s?.filename}/>
@@ -567,6 +602,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
               {savedMsg && <span className="saved-msg">{savedMsg}</span>}
             </div>
 
+            {/* แถบกราฟแท่งเปอร์เซ็นต์อย่างสั้น เปรียบเทียบจำนวณแต่ละคลาสคัดแยกที่เจอ */}
             {Object.keys(displaySummary.byClass).length > 0 && (
               <div className="result-class-list">
                 <p className="class-list-title">{lang==="th" ? "สรุปแต่ละคลาส" : "Class summary"}</p>
@@ -582,6 +618,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
               </div>
             )}
 
+            {/* ชุดเมนูปุ่มกดสั่งพิมพ์รายงานหรือเคลียร์ล้างหน้าใหม่ */}
             {step === "result" && (
               <div className="result-actions">
                 <label className="btn-action btn-add-more">
@@ -589,16 +626,10 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
                   <input type="file" accept="image/*" multiple style={{display:"none"}}
                     onChange={e => handleAddMore(e.target.files)}/>
                 </label>
-                <button onClick={() => setCameraOpen(true)} className="btn-action">
-                  <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8"
-                    style={{width:"14px",height:"14px",display:"inline",verticalAlign:"middle",marginRight:"5px"}}>
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/>
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z"/>
-                  </svg>
-                  {lang === "th" ? "ถ่ายภาพเพิ่ม" : "Take photo"}
+                <button onClick={() => setCameraOpen(true)} className="btn-action btn-add-more">
+                  {lang==="th" ? "ถ่ายภาพเพิ่ม" : "Take photo"}
                 </button>
+                <p></p>
                 <button onClick={() => generatePdf(resultSlots, displaySummary, lang)} className="btn-action">
                   {lang==="th" ? "ดาวน์โหลด PDF" : "Download PDF"}
                 </button>
@@ -612,6 +643,7 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
             )}
           </aside>
 
+          {/* โซนหลักพื้นที่หน้าจอการนำเสนอ (Main View): สลับมุมมองตามสไตล์ข้อมูล */}
           <div className="result-main">
             {doneSoFar > 0 && (
               <div className="view-toggle">
@@ -625,14 +657,20 @@ export default function DetectPage({ initialBatch = null, historyId = null, onBa
                 </button>
               </div>
             )}
+            
+            {/* ขณะที่กำลังประมวลผล ให้แสดงการ์ดโครงกระดูกจำลองความเคลื่อนไหว (Skeleton Animation) */}
             {isProcessing && resultSlots.map((slot,i) =>
               (!slot || slot.status==="loading")
                 ? <SkeletonCard key={i} filename={slot?.filename??`Image ${i+1}`}/>
                 : null
             )}
+            
+            {/* มุมมองคัดแยกชิ้นย่อยกริดตามชนิดคลาสเซลล์ */}
             {viewMode==="class" && (
               <ViewByClass resultSlots={resultSlots} summary={displaySummary} lang={lang}/>
             )}
+            
+            {/* มุมมองดูแกลเลอรีสไลด์ภาพต้นฉบับกรอบใหญ่ */}
             {viewMode==="gallery" && step==="result" && (
               <ViewGallery resultSlots={resultSlots} lang={lang} onRemoveSlot={handleRemoveSlot}/>
             )}

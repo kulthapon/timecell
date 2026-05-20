@@ -122,19 +122,19 @@
 .rt-btn:hover       { opacity: 0.88; }
 .rt-btn-start       { background: #1565c0; color: #fff; }
 .rt-btn-stop        { background: #e24b4a; color: #fff; }
-.rt-btn-capture     { background: #fff; color: #1a1a1a; border: 1px solid #ddd; }
+.rt-btn-capture     { background: (#fff); color: #1a1a1a; border: 1px solid #ddd; }
 
 /* ── Detection Panel ── */
 .rt-panel {
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  background: var(--bg);
+  border: 1px solid var(--text-sub);  
   border-radius: 12px;
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-.rt-panel h3 { font-size: 13px; font-weight: 600; color: #1a1a1a; margin: 0; }
+.rt-panel h3 { font-size: 13px; font-weight: 600; color: var(--text); margin: 0; }
 .rt-empty    { font-size: 12px; color: #888; text-align: center; padding: 1rem 0; margin: 0; }
 
 .rt-list {

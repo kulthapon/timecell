@@ -10,7 +10,7 @@ const SUPPORTED_THEMES = ["light", "dark"];
 const DEFAULT_THEME    = "light";
 
 const COOKIE_OPTIONS = {
-  maxAge:   365 * 24 * 60 * 60 * 1000,
+  maxAge:   365 * 24 * 60 * 60 * 1000, // 1 ปี
   httpOnly: false,
   sameSite: "lax",
 };

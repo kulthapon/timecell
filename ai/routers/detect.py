@@ -1,6 +1,3 @@
-"""
-routers/detect.py — Detection endpoints.
-"""
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from typing import List
@@ -12,10 +9,8 @@ from ml.pipeline import process_single_image
 
 router = APIRouter()
 
-
 @router.post("/detect")
 async def detect(files: List[UploadFile] = File(...)):
-    """Detect cells in one or more images."""
     if yolo_model is None:
         return JSONResponse({"error": "YOLO model not loaded"}, status_code=503)
 
@@ -34,7 +29,6 @@ async def detect(files: List[UploadFile] = File(...)):
 
 @router.post("/api/ai/detect")
 async def detect_single(file: UploadFile = File(...)):
-    """Single-file detect endpoint — used by DetectPage.jsx."""
     if yolo_model is None:
         raise HTTPException(status_code=503, detail="YOLO model not loaded")
 
