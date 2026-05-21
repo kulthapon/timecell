@@ -5,13 +5,6 @@ const { createProxyMiddleware } = require("http-proxy-middleware");
 const AI_URL    = process.env.AI_URL;
 const AI_WS_URL = process.env.AI_WS_URL;
 
-/* ─── WebSocket Proxy (เพื่อทำ Realtime ระหว่าง Client-AI) ─────────────────────────── */
-const aiWsProxy = createProxyMiddleware({
-  target:       AI_WS_URL,
-  changeOrigin: true,
-  ws:           true, 
-});
-
 /* ─── classify ────────────────────────────────────── */
 async function classify(req, res) {
   // 1. ตรวจสอบก่อนว่าผู้ใช้อัปโหลดไฟล์รูปส่งมาด้วยไหม
@@ -45,7 +38,7 @@ async function classify(req, res) {
 }
 
 /* ─── ฟังก์ชันตรวจจับวัตถุ - แบบไฟล์เดียว (detectSingle) ───────────────────────── */
-async function detectSingle(req, res) {
+async function detect(req, res) {
   // 1. ตรวจสอบก่อนว่าผู้ใช้ส่งไฟล์รูปมาไหม
   if (!req.file) return res.status(400).json({ message: "no_file" });
 
@@ -66,14 +59,13 @@ async function detectSingle(req, res) {
     const result = data.results ? data.results[0] : data;
     res.json(result);
   } catch (err) {
-    console.error("[detectSingle]", err.message);
+    console.error("[detect]", err.message);
     res.status(502).json({ message: "ai_unavailable" });
   }
 }
 
 // ส่งออกทุกฟังก์ชันเพื่อนำไปผูกใช้ร่วมกับ Router
 module.exports = {
-  aiWsProxy,
   classify,
   detect
 };

@@ -320,7 +320,9 @@ export default function RealtimePage() {
         {savedImages.length > 0 && (
           <div className="rt-saved">
             <div className="rt-saved-header">
-              <p>{lang === "th" ? "ภาพที่บันทึก" : "Saved"} ({savedImages.length})</p>
+              <p style={{ color: "var(--text)" }}>
+                {lang === "th" ? "ภาพที่บันทึก" : "Saved"} ({savedImages.length})
+              </p>
               <button onClick={() => setSavedImages([])} className="rt-clear-btn">
                 {lang === "th" ? "ลบทั้งหมด" : "Clear all"}
               </button>

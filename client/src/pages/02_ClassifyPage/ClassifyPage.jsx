@@ -401,7 +401,9 @@ export default function ClassifyPage() {
       {step === "loading" && (
         <div className="cls-card cls-loading">
           <div className="cls-spinner" />
-          <p>{lang === "th" ? "กำลังวิเคราะห์ภาพ..." : "Analyzing image..."}</p>
+          <p style={{ color: "var(--text)" }}>
+            {lang === "th" ? "กำลังวิเคราะห์ภาพ..." : "Analyzing image..."}
+          </p>
           <p className="cls-loading-sub">
             {lang === "th" ? "โมเดลกำลังประมวลผล กรุณารอสักครู่" : "Model is processing, please wait"}
           </p>

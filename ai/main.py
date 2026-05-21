@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import ALLOWED_ORIGINS, STATIC_DIR
 from ml.loader import INPUT_SIZE, classification_model, classification_labels, yolo_model
-from routers import classify, detect, history, realtime
+from routers import classify, detect, realtime
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 
@@ -32,7 +32,6 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.include_router(realtime.router)
 app.include_router(classify.router)
 app.include_router(detect.router)
-app.include_router(history.router)
 
 
 @app.get("/health", tags=["Ops"])
