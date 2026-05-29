@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "i18n": "^0.15.3",
-    "js-cookie": "^3.0.5"
+    "js-cookie": "^3.0.7"
   }
 }
