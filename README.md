@@ -3,7 +3,7 @@ Time Cell is a web-based artificial intelligence system for analyzing and classi
 
 The web application is built using  `React`, `node.js`, `express.js`, `javascript`, `MySQL`, `python` and `FastAPI`, integrated with Artificial Intelligence (AI). The system utilizes the `YOLO11m` model for white blood cell detection and localization, and `MobileNetV3` for cell classification. 
 
-The system can classify five types of white blood cells:
+The system can classify five types of white blood cells from body fluid:
 
 * Basophil
 * Eosinophil
@@ -71,13 +71,13 @@ TimeCell/
 ---
 ## Features
 
-- การวิเคราะห์เซลล์แบบเรียลไทม์
-- การจำแนกชนิดเซลล์
-- การนับจำนวนเซลล์
-- ข้อมูลประวัติการวิเคราะห์เซลล์
-- คลังความรู้เรื่องเซลล์
-- การเข้าสู่ระบบ-สมัครสมาชิก
-- รองรับการเปลี่ยนภาษา (ภาษาไทย/ภาษาอังกฤษ) และการเปลี่ยนธีมสี (light/dark)
+- Real-time white blood cell analysis
+- Automated detection and classification of five white blood cell types
+- White blood cell counting and quantitative analysis
+- Integrated knowledge base for white blood cell identification and learning
+- User authentication and account management
+- Multi-language support (Thai and English)
+- Theme customization with Light and Dark modes
 
 ---
 ## Requirements
@@ -87,34 +87,37 @@ TimeCell/
 - Visual Studio Code https://code.visualstudio.com/download
 - MySQL Community https://dev.mysql.com/downloads/mysql/8.0.html
 - MySQL Workbench https://dev.mysql.com/downloads/workbench/
-  * สร้าง Connection โดยใช้ Port 3307 จากนั้นกำหนด username: root และ password: 1234
+  * Create a database connection using Port 3307
+  * Username: root
+  * Password: 1234
 - Docker https://www.docker.com/products/docker-desktop/
+- Pre
 
 ---
 ## Installation
 
-รันคำสั่งตามขั้นตอนต่อไปนี้บน Command Line โดยในระหว่างดำเนินการให้เปิดหน้าต่าง Docker ร่วมด้วย
+Follow the steps below using a command-line interface. Make sure Docker Desktop is running throughout the installation process.
 
-1. ใช้คำสั่ง git clone และเข้าไปที่โฟลเดอร์ดังกล่าว
+1. Clone the Repository
    ```bash
-   git clone https://github.com/ComSciThammasatU/2568-2-cs403-final-submission-68-1_12_tnt-r2.git
+   git clone https://github.com/kulthapon/TimeCell.git
    ```
    ```bash
-   cd 2568-2-cs403-final-submission-68-1_12_tnt-r2
+   cd TimrCell
    ```
-2. ทำการติดตั้ง library ที่จำเป็นสำหรับการใช้งาน AI Services บนเว็บแอปพลิเคชัน
+2. Build the AI Service Base Image
    ```bash
    cd ai 
    ```
    ```bash
    docker build -f Dockerfile.base -t timecell-ai-base . 
    ```
-3. ติดตั้ง Container
+3. Build and Run the Containers
    ```bash
    cd ..
    ```
    ```bash
    docker-compose build --no-cache && docker-compose up
    ```
-4. ใช้งานเว็บแอปพลิเคชันผ่าน http://localhost:3000/
+4. Access the Application via http://localhost:3000/
 ---
