@@ -110,7 +110,4 @@ TimeCell/
    docker-compose build --no-cache && docker-compose up
    ```
 4. ใช้งานเว็บแอปพลิเคชันผ่าน http://localhost:3000/
-   <img width="758" height="176" alt="image" src="https://github.com/user-attachments/assets/428e6836-1041-43c5-a16c-6d10e0607ce9" />
-   <img width="1297" height="620" alt="image" src="https://github.com/user-attachments/assets/67d6be47-64f1-4132-98d7-cf85fd0d8d9c" />
-
 ---
