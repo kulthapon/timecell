@@ -1,5 +1,3 @@
-<img width="200" height=auto alt="TimeCell" src="https://github.com/user-attachments/assets/f034dd99-a3af-4d1b-bbd9-54595dd9610b" />
-
 ## Time Cell
 Time Cell เป็นระบบปัญญาประดิษฐ์บนเว็บสำหรับวิเคราะห์และจำแนกภาพเซลล์เม็ดเลือดขาวจากของเหลวในร่างกาย โดยพัฒนาในรูปแบบเว็บแอปพลิเคชันเพื่อให้สามารถเข้าถึงและใช้งานได้ผ่านเว็บเบราว์เซอร์ทั้งบนคอมพิวเตอร์และอุปกรณ์พกพา เว็บแอปพลิเคชันพัฒนาโดยใช้ `React`, `node.js`, `express.js`, `javascript`, `MySQL`, `python` และ `FastAPI` ร่วมกับการพัฒนาโมเดลปัญญาประดิษฐ์และ Deep Learning 
 
