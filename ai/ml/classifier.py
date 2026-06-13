@@ -22,7 +22,6 @@ def run_classification(image: Image.Image) -> list[dict]:
         for i in pred.argsort()[::-1][:5]
     ]
 
-# ฟังก์ชันสั้นสำหรับรับภาพที่ถูกครอปมา (Crop Image)
 def classify_crop(crop_pil: Image.Image) -> tuple[str, float]:
     results = run_classification(crop_pil)
     if not results:
