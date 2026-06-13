@@ -91,7 +91,6 @@ TimeCell/
   * Username: root
   * Password: 1234
 - Docker https://www.docker.com/products/docker-desktop/
-- Pre
 
 ---
 ## Installation
