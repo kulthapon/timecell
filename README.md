@@ -1,8 +1,15 @@
 ## Time Cell
-Time Cell เป็นระบบปัญญาประดิษฐ์บนเว็บสำหรับวิเคราะห์และจำแนกภาพเซลล์เม็ดเลือดขาวจากของเหลวในร่างกาย โดยพัฒนาในรูปแบบเว็บแอปพลิเคชันเพื่อให้สามารถเข้าถึงและใช้งานได้ผ่านเว็บเบราว์เซอร์ทั้งบนคอมพิวเตอร์และอุปกรณ์พกพา เว็บแอปพลิเคชันพัฒนาโดยใช้ `React`, `node.js`, `express.js`, `javascript`, `MySQL`, `python` และ `FastAPI` ร่วมกับการพัฒนาโมเดลปัญญาประดิษฐ์และ Deep Learning 
+Time Cell is a web-based artificial intelligence system for analyzing and classifying white blood cells from body fluid images. The system is developed as a web application, enabling users to access and utilize its features through web browsers on both desktop and mobile devices.
 
-ระบบใช้โมเดล YOLO11m สำหรับตรวจจับและระบุตำแหน่งเซลล์เม็ดเลือดขาว และใช้ MobileNetV3 สำหรับจำแนกชนิดของเซลล์ โดยรองรับการจำแนกเซลล์เม็ดเลือดขาว 5 ชนิด ได้แก่ `Basophil`, `Eosinophil`, `Lymphocyte`, `Monocyte` และ `Neutrophil`
+The web application is built using  `React`, `node.js`, `express.js`, `javascript`, `MySQL`, `python` and `FastAPI`, integrated with Artificial Intelligence (AI).
 
+The system employs the `YOLO11m` model for white blood cell detection and localization, and `MobileNetV3` for cell classification. It supports the classification of five white blood cell types:
+
+Basophil
+Eosinophil
+Lymphocyte
+Monocyte
+Neutrophil
 ---
 ## File Structure 
 
