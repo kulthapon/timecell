@@ -83,7 +83,7 @@ TimeCell/
 ## Requirements
 
 - Python version 3.13.7 https://www.python.org/downloads/release/python-3137/
-- Node.js https://nodejs.org/en](https://nodejs.org/en/download
+- Node.js https://nodejs.org/en/download
 - Visual Studio Code https://code.visualstudio.com/download
 - MySQL Community https://dev.mysql.com/downloads/mysql/8.0.html
 - MySQL Workbench https://dev.mysql.com/downloads/workbench/
