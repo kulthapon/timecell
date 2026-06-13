@@ -59,7 +59,6 @@ TimeCell/
 ├── Dockerfile
 │
 ├── .gitignore
-├── Instructions-for-Students.md
 └── README.md
 ```
 ---
