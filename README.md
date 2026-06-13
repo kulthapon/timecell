@@ -1,9 +1,9 @@
 ## Time Cell
 Time Cell is a web-based artificial intelligence system for analyzing and classifying white blood cells from body fluid images. The system is developed as a web application, enabling users to access and utilize its features through web browsers on both desktop and mobile devices.
 
-The web application is built using  `React`, `node.js`, `express.js`, `javascript`, `MySQL`, `python` and `FastAPI`, integrated with Artificial Intelligence (AI).
+The web application is built using  `React`, `node.js`, `express.js`, `javascript`, `MySQL`, `python` and `FastAPI`, integrated with Artificial Intelligence (AI). The system utilizes the `YOLO11m` model for white blood cell detection and localization, and `MobileNetV3` for cell classification. 
 
-The system employs the `YOLO11m` model for white blood cell detection and localization, and `MobileNetV3` for cell classification. It supports the classification of five white blood cell types:
+The system can classify five types of white blood cells:
 
 * Basophil
 * Eosinophil
