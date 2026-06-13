@@ -6,10 +6,10 @@ The web application is built using  `React`, `node.js`, `express.js`, `javascrip
 The system employs the `YOLO11m` model for white blood cell detection and localization, and `MobileNetV3` for cell classification. It supports the classification of five white blood cell types:
 
 * Basophil
-Eosinophil
-Lymphocyte
-Monocyte
-Neutrophil
+* Eosinophil
+* Lymphocyte
+* Monocyte
+* Neutrophil
 ---
 ## File Structure 
 
