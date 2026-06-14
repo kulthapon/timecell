@@ -102,7 +102,7 @@ Follow the steps below using a command-line interface. Make sure Docker Desktop 
    git clone https://github.com/kulthapon/TimeCell.git
    ```
    ```bash
-   cd TimrCell
+   cd TimeCell
    ```
 2. Build the AI Service Base Image
    ```bash
